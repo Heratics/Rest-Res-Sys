@@ -1,8 +1,8 @@
-import { z } from "zod";
-
 export type ReservationStatus = "Pending" | "Confirmed" | "Checked In" | "Cancelled";
 export type PaymentMethod = "CliQ" | "Pay Upon Arrival";
 export type PaymentStatus = "Pending" | "Paid" | "Verified";
+export type EmployeeRole = "Supervisor" | "Senior Staff" | "Host" | "Waiter";
+export type EmployeeStatus = "Active" | "Inactive";
 
 export interface Customer {
   id: string;
@@ -32,6 +32,16 @@ export interface Table {
   reservationId?: string;
 }
 
+export interface Employee {
+  id: string;
+  name: string;
+  username: string;
+  phone: string;
+  role: EmployeeRole;
+  status: EmployeeStatus;
+  dateAdded: string;
+}
+
 export const mockCustomers: Customer[] = [
   { id: "c1", name: "Eleanor Vance", phone: "+962 6 555 0101" },
   { id: "c2", name: "Marcus Sterling", phone: "+962 6 555 0102" },
@@ -40,8 +50,8 @@ export const mockCustomers: Customer[] = [
   { id: "c5", name: "Isabella Rossi", phone: "+962 6 555 0105" },
 ];
 
-const today = new Date().toISOString().split('T')[0];
-const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+const today = new Date().toISOString().split("T")[0];
+const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
 
 export let mockReservations: Reservation[] = [
   {
@@ -122,7 +132,7 @@ export let mockReservations: Reservation[] = [
     id: "r7",
     confirmationNumber: "#AUR-2025-0477",
     customer: mockCustomers[1],
-    date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+    date: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
     time: "19:00",
     guests: 8,
     status: "Confirmed",
@@ -134,7 +144,7 @@ export let mockReservations: Reservation[] = [
     id: "r8",
     confirmationNumber: "#AUR-2025-0478",
     customer: mockCustomers[2],
-    date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+    date: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
     time: "21:30",
     guests: 2,
     status: "Confirmed",
@@ -146,7 +156,7 @@ export let mockReservations: Reservation[] = [
     id: "r9",
     confirmationNumber: "#AUR-2025-0479",
     customer: mockCustomers[3],
-    date: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+    date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
     time: "18:30",
     guests: 4,
     status: "Pending",
@@ -158,14 +168,14 @@ export let mockReservations: Reservation[] = [
     id: "r10",
     confirmationNumber: "#AUR-2025-0480",
     customer: mockCustomers[4],
-    date: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+    date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
     time: "20:00",
     guests: 2,
     status: "Confirmed",
     paymentMethod: "Pay Upon Arrival",
     paymentStatus: "Pending",
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  }
+  },
 ];
 
 export const mockTables: Table[] = [
@@ -194,19 +204,80 @@ export const restaurantSettings = {
   allowPayUponArrival: true,
 };
 
+export const mockEmployees: Employee[] = [
+  {
+    id: "e1",
+    name: "Luca Moreau",
+    username: "luca.m",
+    phone: "+962 6 555 0201",
+    role: "Supervisor",
+    status: "Active",
+    dateAdded: "2024-03-15",
+  },
+  {
+    id: "e2",
+    name: "Amara Diallo",
+    username: "amara.d",
+    phone: "+962 6 555 0202",
+    role: "Senior Staff",
+    status: "Active",
+    dateAdded: "2024-05-02",
+  },
+  {
+    id: "e3",
+    name: "Theo Nakamura",
+    username: "theo.n",
+    phone: "+962 6 555 0203",
+    role: "Host",
+    status: "Active",
+    dateAdded: "2024-07-19",
+  },
+  {
+    id: "e4",
+    name: "Celine Dupont",
+    username: "celine.d",
+    phone: "+962 6 555 0204",
+    role: "Waiter",
+    status: "Active",
+    dateAdded: "2024-09-08",
+  },
+  {
+    id: "e5",
+    name: "Rafael Ortega",
+    username: "rafael.o",
+    phone: "+962 6 555 0205",
+    role: "Waiter",
+    status: "Inactive",
+    dateAdded: "2024-11-22",
+  },
+  {
+    id: "e6",
+    name: "Priya Sharma",
+    username: "priya.s",
+    phone: "+962 6 555 0206",
+    role: "Senior Staff",
+    status: "Active",
+    dateAdded: "2025-01-10",
+  },
+];
+
 export const updateReservation = (id: string, updates: Partial<Reservation>) => {
-  mockReservations = mockReservations.map((res) => 
+  mockReservations = mockReservations.map((res) =>
     res.id === id ? { ...res, ...updates } : res
   );
-  return mockReservations.find(res => res.id === id);
+  return mockReservations.find((res) => res.id === id);
 };
 
-export const createReservation = (data: Omit<Reservation, "id" | "confirmationNumber" | "createdAt">) => {
+export const createReservation = (
+  data: Omit<Reservation, "id" | "confirmationNumber" | "createdAt">
+) => {
   const newRes: Reservation = {
     ...data,
     id: `r${Math.floor(Math.random() * 10000)}`,
-    confirmationNumber: `#AUR-2025-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-    createdAt: new Date().toISOString()
+    confirmationNumber: `#AUR-2025-${Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0")}`,
+    createdAt: new Date().toISOString(),
   };
   mockReservations = [newRes, ...mockReservations];
   return newRes;

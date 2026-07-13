@@ -1,24 +1,51 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { Route, Switch, Router as WouterRouter, useLocation, Redirect } from "wouter";
 
-import { PublicLayout } from '@/layouts/PublicLayout';
-import { DashboardLayout } from '@/layouts/DashboardLayout';
-import { StoreProvider } from '@/services/StoreContext';
+import { StoreProvider } from "@/services/StoreContext";
+import { useOwnerAuth, useEmployeeAuth } from "@/services/authStore";
 
-import Home from '@/pages/public/Home';
-import Reserve from '@/pages/public/Reserve';
-import MyReservation from '@/pages/public/MyReservation';
+// Layouts
+import { PublicLayout } from "@/layouts/PublicLayout";
+import { OwnerLayout } from "@/layouts/OwnerLayout";
+import { EmployeeLayout } from "@/layouts/EmployeeLayout";
 
-import DashboardOverview from '@/pages/dashboard/DashboardOverview';
-import Reservations from '@/pages/dashboard/Reservations';
-import Calendar from '@/pages/dashboard/Calendar';
-import Tables from '@/pages/dashboard/Tables';
-import QrScanner from '@/pages/dashboard/QrScanner';
-import Payments from '@/pages/dashboard/Payments';
-import Settings from '@/pages/dashboard/Settings';
+// Customer pages
+import Home from "@/pages/public/Home";
+import Reserve from "@/pages/public/Reserve";
+import MyReservation from "@/pages/public/MyReservation";
+
+// Auth pages
+import OwnerLogin from "@/pages/owner/OwnerLogin";
+import EmployeeLogin from "@/pages/employee/EmployeeLogin";
+
+// Owner pages (shared with employees where applicable)
+import DashboardOverview from "@/pages/dashboard/DashboardOverview";
+import Reservations from "@/pages/dashboard/Reservations";
+import Calendar from "@/pages/dashboard/Calendar";
+import Tables from "@/pages/dashboard/Tables";
+import QrScanner from "@/pages/dashboard/QrScanner";
+import Payments from "@/pages/dashboard/Payments";
+import Settings from "@/pages/dashboard/Settings";
+import Employees from "@/pages/owner/Employees";
 
 const queryClient = new QueryClient();
+
+// ─── Route Guards ─────────────────────────────────────────────────────────────
+
+function OwnerRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useOwnerAuth();
+  if (!isAuthenticated) return <Redirect to="/owner-login" />;
+  return <OwnerLayout>{children}</OwnerLayout>;
+}
+
+function EmployeeRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useEmployeeAuth();
+  if (!isAuthenticated) return <Redirect to="/employee-login" />;
+  return <EmployeeLayout>{children}</EmployeeLayout>;
+}
+
+// ─── 404 ─────────────────────────────────────────────────────────────────────
 
 function NotFound() {
   return (
@@ -31,31 +58,58 @@ function NotFound() {
   );
 }
 
+// ─── Router ──────────────────────────────────────────────────────────────────
+
 function Router() {
   return (
     <Switch>
+      {/* ── Public / Customer ── */}
       <Route path="/" component={() => <PublicLayout><Home /></PublicLayout>} />
       <Route path="/reserve" component={() => <PublicLayout><Reserve /></PublicLayout>} />
       <Route path="/my-reservation" component={() => <PublicLayout><MyReservation /></PublicLayout>} />
-      
-      <Route path="/dashboard" component={() => <DashboardLayout><DashboardOverview /></DashboardLayout>} />
-      <Route path="/dashboard/reservations" component={() => <DashboardLayout><Reservations /></DashboardLayout>} />
-      <Route path="/dashboard/calendar" component={() => <DashboardLayout><Calendar /></DashboardLayout>} />
-      <Route path="/dashboard/tables" component={() => <DashboardLayout><Tables /></DashboardLayout>} />
-      <Route path="/dashboard/qr-scanner" component={() => <DashboardLayout><QrScanner /></DashboardLayout>} />
-      <Route path="/dashboard/payments" component={() => <DashboardLayout><Payments /></DashboardLayout>} />
-      <Route path="/dashboard/settings" component={() => <DashboardLayout><Settings /></DashboardLayout>} />
-      
+
+      {/* ── Auth pages (standalone, no layout wrapper) ── */}
+      <Route path="/owner-login" component={OwnerLogin} />
+      <Route path="/employee-login" component={EmployeeLogin} />
+
+      {/* ── Owner Dashboard ── */}
+      <Route path="/owner" component={() => <OwnerRoute><DashboardOverview /></OwnerRoute>} />
+      <Route path="/owner/reservations" component={() => <OwnerRoute><Reservations /></OwnerRoute>} />
+      <Route path="/owner/calendar" component={() => <OwnerRoute><Calendar /></OwnerRoute>} />
+      <Route path="/owner/tables" component={() => <OwnerRoute><Tables /></OwnerRoute>} />
+      <Route path="/owner/qr-scanner" component={() => <OwnerRoute><QrScanner /></OwnerRoute>} />
+      <Route path="/owner/payments" component={() => <OwnerRoute><Payments /></OwnerRoute>} />
+      <Route path="/owner/settings" component={() => <OwnerRoute><Settings /></OwnerRoute>} />
+      <Route path="/owner/employees" component={() => <OwnerRoute><Employees /></OwnerRoute>} />
+
+      {/* ── Legacy /dashboard/* → redirect to /owner/* ── */}
+      <Route path="/dashboard" component={() => <Redirect to="/owner" />} />
+      <Route path="/dashboard/reservations" component={() => <Redirect to="/owner/reservations" />} />
+      <Route path="/dashboard/calendar" component={() => <Redirect to="/owner/calendar" />} />
+      <Route path="/dashboard/tables" component={() => <Redirect to="/owner/tables" />} />
+      <Route path="/dashboard/qr-scanner" component={() => <Redirect to="/owner/qr-scanner" />} />
+      <Route path="/dashboard/payments" component={() => <Redirect to="/owner/payments" />} />
+      <Route path="/dashboard/settings" component={() => <Redirect to="/owner/settings" />} />
+
+      {/* ── Employee Dashboard ── */}
+      <Route path="/employee" component={() => <EmployeeRoute><DashboardOverview /></EmployeeRoute>} />
+      <Route path="/employee/reservations" component={() => <EmployeeRoute><Reservations /></EmployeeRoute>} />
+      <Route path="/employee/calendar" component={() => <EmployeeRoute><Calendar /></EmployeeRoute>} />
+      <Route path="/employee/tables" component={() => <EmployeeRoute><Tables /></EmployeeRoute>} />
+      <Route path="/employee/qr-scanner" component={() => <EmployeeRoute><QrScanner /></EmployeeRoute>} />
+
       <Route component={NotFound} />
     </Switch>
   );
 }
 
+// ─── App ─────────────────────────────────────────────────────────────────────
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <StoreProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
         </WouterRouter>
         <Toaster />

@@ -1,1 +1,1 @@
-export { useAuthStore } from "./StoreContext";
+export { useAuthStore, useOwnerAuth, useEmployeeAuth } from "./StoreContext";

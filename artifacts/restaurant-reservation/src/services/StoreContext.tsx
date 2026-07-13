@@ -1,11 +1,35 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Reservation, mockReservations, Table, mockTables, restaurantSettings, createReservation } from "./mockData";
+import {
+  Reservation,
+  mockReservations,
+  Table,
+  mockTables,
+  restaurantSettings,
+  createReservation,
+  Employee,
+  mockEmployees,
+} from "./mockData";
 
-const SESSION_KEY = "aurum_mock_session";
+// ─── Session keys ───────────────────────────────────────────────────────────
+const CUSTOMER_SESSION_KEY = "aurum_mock_session";
+const OWNER_SESSION_KEY = "aurum_owner_session";
+const EMPLOYEE_SESSION_KEY = "aurum_employee_session";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
 export interface AuthUser {
   phone: string;
   name: string;
+}
+
+export interface OwnerUser {
+  username: string;
+}
+
+export interface EmployeeUser {
+  id: string;
+  name: string;
+  username: string;
+  role: string;
 }
 
 export interface AuthState {
@@ -13,6 +37,20 @@ export interface AuthState {
   isAuthenticated: boolean;
   login: (phone: string, pass: string) => void;
   register: (name: string, phone: string, pass: string) => void;
+  logout: () => void;
+}
+
+export interface OwnerAuthState {
+  owner: OwnerUser | null;
+  isAuthenticated: boolean;
+  login: (username: string, pass: string) => void;
+  logout: () => void;
+}
+
+export interface EmployeeAuthState {
+  employee: EmployeeUser | null;
+  isAuthenticated: boolean;
+  login: (username: string, pass: string) => void;
   logout: () => void;
 }
 
@@ -25,6 +63,13 @@ export interface ReservationState {
   addReservation: (data: Omit<Reservation, "id" | "confirmationNumber" | "createdAt">) => Reservation;
 }
 
+export interface EmployeeStoreState {
+  employees: Employee[];
+  addEmployee: (emp: Omit<Employee, "id" | "dateAdded">) => void;
+  updateEmployee: (id: string, updates: Partial<Employee>) => void;
+  removeEmployee: (id: string) => void;
+}
+
 export type Settings = typeof restaurantSettings;
 
 export interface RestaurantState {
@@ -34,75 +79,109 @@ export interface RestaurantState {
   updateTable: (id: string, status: Table["status"]) => void;
 }
 
+// ─── Context ─────────────────────────────────────────────────────────────────
 export const StoreContext = createContext<{
   auth: AuthState;
+  ownerAuth: OwnerAuthState;
+  employeeAuth: EmployeeAuthState;
   reservationStore: ReservationState;
+  employeeStore: EmployeeStoreState;
   restaurantStore: RestaurantState;
 } | null>(null);
 
-function loadSession(): AuthUser | null {
+// ─── Session helpers ─────────────────────────────────────────────────────────
+function loadSession<T>(key: string): T | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.phone === "string" && typeof parsed.name === "string") {
-      return parsed as AuthUser;
-    }
-    return null;
+    return JSON.parse(raw) as T;
   } catch {
     return null;
   }
 }
 
-function saveSession(user: AuthUser | null) {
+function saveSession<T>(key: string, value: T | null) {
   try {
-    if (user) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    if (value) {
+      localStorage.setItem(key, JSON.stringify(value));
     } else {
-      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(key);
     }
   } catch {
-    // silently ignore
+    // ignore
   }
 }
 
+// ─── Provider ────────────────────────────────────────────────────────────────
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(loadSession);
+  const [user, setUser] = useState<AuthUser | null>(() => loadSession<AuthUser>(CUSTOMER_SESSION_KEY));
+  const [owner, setOwner] = useState<OwnerUser | null>(() => loadSession<OwnerUser>(OWNER_SESSION_KEY));
+  const [employeeUser, setEmployeeUser] = useState<EmployeeUser | null>(() =>
+    loadSession<EmployeeUser>(EMPLOYEE_SESSION_KEY)
+  );
+
   const [reservations, setReservations] = useState<Reservation[]>(mockReservations);
   const [settings, setSettings] = useState<Settings>(restaurantSettings);
   const [tables, setTables] = useState<Table[]>(mockTables);
+  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
 
-  // Sync session to localStorage whenever user changes
-  useEffect(() => {
-    saveSession(user);
-  }, [user]);
+  // Sync sessions to localStorage
+  useEffect(() => { saveSession(CUSTOMER_SESSION_KEY, user); }, [user]);
+  useEffect(() => { saveSession(OWNER_SESSION_KEY, owner); }, [owner]);
+  useEffect(() => { saveSession(EMPLOYEE_SESSION_KEY, employeeUser); }, [employeeUser]);
 
+  // ── Customer auth ──
   const auth: AuthState = {
     user,
     isAuthenticated: !!user,
-    login: (phone: string, _pass: string) => {
-      // Mock login — look up existing reservation to get real name, fallback to "Valued Guest"
-      const existingRes = reservations.find((r) => r.customer.phone === phone);
-      const name = existingRes ? existingRes.customer.name : "Valued Guest";
+    login: (phone, _pass) => {
+      const existing = reservations.find((r) => r.customer.phone === phone);
+      const name = existing ? existing.customer.name : "Valued Guest";
       setUser({ phone, name });
     },
-    register: (name: string, phone: string, _pass: string) => {
-      // Mock register — immediately log in with provided details
+    register: (name, phone, _pass) => {
       setUser({ phone, name });
     },
     logout: () => setUser(null),
   };
 
+  // ── Owner auth ──
+  const ownerAuth: OwnerAuthState = {
+    owner,
+    isAuthenticated: !!owner,
+    // Mock: any credentials work
+    login: (username, _pass) => setOwner({ username }),
+    logout: () => setOwner(null),
+  };
+
+  // ── Employee auth ──
+  const employeeAuth: EmployeeAuthState = {
+    employee: employeeUser,
+    isAuthenticated: !!employeeUser,
+    // Mock: match against mock employees by username, or fall back to a generic user
+    login: (username, _pass) => {
+      const found = employees.find(
+        (e) => e.username === username && e.status === "Active"
+      );
+      if (found) {
+        setEmployeeUser({ id: found.id, name: found.name, username: found.username, role: found.role });
+      } else {
+        // Generic fallback — any credentials work
+        setEmployeeUser({ id: "e_mock", name: "Staff Member", username, role: "Waiter" });
+      }
+    },
+    logout: () => setEmployeeUser(null),
+  };
+
+  // ── Reservations ──
   const reservationStore: ReservationState = {
     reservations,
-    getReservation: (id: string) => reservations.find((r) => r.id === id),
-    getReservationByPhone: (phone: string) => reservations.find((r) => r.customer.phone === phone),
-    updateStatus: (id: string, status: Reservation["status"]) => {
-      setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    },
-    updatePayment: (id: string, status: Reservation["paymentStatus"]) => {
-      setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, paymentStatus: status } : r)));
-    },
+    getReservation: (id) => reservations.find((r) => r.id === id),
+    getReservationByPhone: (phone) => reservations.find((r) => r.customer.phone === phone),
+    updateStatus: (id, status) =>
+      setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
+    updatePayment: (id, status) =>
+      setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, paymentStatus: status } : r))),
     addReservation: (data) => {
       const newRes = createReservation(data);
       setReservations((prev) => [newRes, ...prev]);
@@ -110,35 +189,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
   };
 
+  // ── Employee store ──
+  const employeeStore: EmployeeStoreState = {
+    employees,
+    addEmployee: (emp) => {
+      const newEmp: Employee = {
+        ...emp,
+        id: `e${Math.floor(Math.random() * 10000)}`,
+        dateAdded: new Date().toISOString().split("T")[0],
+      };
+      setEmployees((prev) => [newEmp, ...prev]);
+    },
+    updateEmployee: (id, updates) =>
+      setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e))),
+    removeEmployee: (id) => setEmployees((prev) => prev.filter((e) => e.id !== id)),
+  };
+
+  // ── Restaurant ──
   const restaurantStore: RestaurantState = {
     settings,
     tables,
-    updateSettings: (updates: Partial<Settings>) => setSettings((prev) => ({ ...prev, ...updates })),
-    updateTable: (id: string, status: Table["status"]) =>
+    updateSettings: (updates) => setSettings((prev) => ({ ...prev, ...updates })),
+    updateTable: (id, status) =>
       setTables((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t))),
   };
 
   return (
-    <StoreContext.Provider value={{ auth, reservationStore, restaurantStore }}>
+    <StoreContext.Provider
+      value={{ auth, ownerAuth, employeeAuth, reservationStore, employeeStore, restaurantStore }}
+    >
       {children}
     </StoreContext.Provider>
   );
 }
 
-export function useAuthStore() {
+// ─── Hooks ───────────────────────────────────────────────────────────────────
+function useStore() {
   const ctx = useContext(StoreContext);
   if (!ctx) throw new Error("Missing StoreProvider");
-  return ctx.auth;
+  return ctx;
 }
 
-export function useReservationStore() {
-  const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error("Missing StoreProvider");
-  return ctx.reservationStore;
-}
-
-export function useRestaurantStore() {
-  const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error("Missing StoreProvider");
-  return ctx.restaurantStore;
-}
+export const useAuthStore = () => useStore().auth;
+export const useOwnerAuth = () => useStore().ownerAuth;
+export const useEmployeeAuth = () => useStore().employeeAuth;
+export const useReservationStore = () => useStore().reservationStore;
+export const useEmployeeStore = () => useStore().employeeStore;
+export const useRestaurantStore = () => useStore().restaurantStore;

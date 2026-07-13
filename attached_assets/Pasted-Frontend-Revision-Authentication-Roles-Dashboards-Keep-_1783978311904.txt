@@ -1,0 +1,304 @@
+Frontend Revision - Authentication, Roles & Dashboards
+
+Keep the current visual design exactly as it is.
+
+Do NOT redesign the UI.
+
+This is still a FRONTEND ONLY project.
+
+Do NOT build a backend.
+
+Do NOT implement JWT.
+
+Do NOT implement authentication.
+
+Do NOT build APIs.
+
+Everything should continue using mock data only.
+
+Claude Code will later replace every mock with a real backend.
+
+User Roles
+
+The application now has three separate user roles.
+
+Customer
+Employee
+Owner
+
+Each role must have its own login experience and dashboard.
+
+Customer
+
+No changes besides the previous authentication improvements.
+
+Customers can:
+
+Register
+Login
+View Reservation
+Make Reservation
+Cancel Reservation
+Owner Authentication
+
+The Owner Dashboard must NEVER be publicly accessible.
+
+Currently anyone can access it.
+
+This must be changed.
+
+Create a dedicated page:
+
+Owner Login
+
+Fields:
+
+Username or Email
+Password
+
+Login Button
+
+After successful login (mock authentication), redirect to:
+
+Owner Dashboard
+
+If not authenticated and someone attempts to visit:
+
+/owner
+
+or
+
+/dashboard
+
+Show the Owner Login page instead.
+
+Use mock authentication only.
+
+Employee Authentication
+
+Create another login page.
+
+Employee Login
+
+Fields:
+
+Employee ID or Username
+Password
+
+Login Button
+
+After login redirect to:
+
+Employee Dashboard
+
+Use mock authentication.
+
+Navigation
+
+The public navbar should now include:
+
+Home
+
+Reserve
+
+My Reservation
+
+Owner Login
+
+Employee Login
+
+The Owner and Employee login buttons should be clearly separated from customer actions.
+
+Owner Dashboard
+
+Keep the existing dashboard.
+
+Owner has access to ALL pages.
+
+Overview
+
+Reservations
+
+Calendar
+
+Tables
+
+QR Scanner
+
+Payments
+
+Settings
+
+PLUS a new page:
+
+Employees
+
+Employees Page
+
+Create a complete employee management page.
+
+Show a searchable employee table.
+
+Columns:
+
+Employee Name
+
+Username
+
+Phone Number
+
+Role
+
+Status
+
+Date Added
+
+Actions
+
+Buttons:
+
+View
+
+Edit
+
+Disable
+
+Delete
+
+Add Employee
+
+Everything uses mock data.
+
+Clicking Add Employee opens a modal.
+
+Fields:
+
+Full Name
+
+Username
+
+Phone Number
+
+Password
+
+Role
+
+Status
+
+Save
+
+Cancel
+
+Mock only.
+
+Edit Employee
+
+Allow editing the same fields.
+
+Mock only.
+
+Employee Dashboard
+
+Employees have their own dashboard.
+
+It should look similar to the Owner Dashboard for consistency.
+
+However they ONLY have access to:
+
+Overview
+
+Reservations
+
+Calendar
+
+Tables
+
+QR Scanner
+
+Exactly these pages.
+
+They should NOT see:
+
+Payments
+
+Settings
+
+Employees
+
+Analytics intended for owners
+
+Any owner management features
+
+Employee Permissions
+
+Reservations
+
+Employees can:
+
+View Reservations
+
+Edit Reservations
+
+Cancel Reservations
+
+Check In Guests
+
+Confirm Arrival
+
+Calendar
+
+View reservations
+
+Edit reservations
+
+Tables
+
+View table availability
+
+Assign tables
+
+QR Scanner
+
+Scan QR codes
+
+Check guests in
+
+They cannot access any owner settings.
+
+Dashboard Protection
+
+Simulate route protection.
+
+Owner Dashboard requires Owner Login.
+
+Employee Dashboard requires Employee Login.
+
+Customer pages require Customer Login only where appropriate.
+
+Use mock authentication state.
+
+Claude Code will later replace this with JWT authentication and proper role-based authorization.
+
+Folder Structure
+
+Organize the frontend clearly.
+
+pages/
+
+customer/
+owner/
+employee/
+
+layouts/
+
+CustomerLayout
+OwnerLayout
+EmployeeLayout
+
+components/
+
+owner/
+employee/
+customer/
+
+Keep the project modular so Claude Code can easily connect the backend.
