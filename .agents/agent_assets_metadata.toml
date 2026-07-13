@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "uEfzB0jpqLLI-1ND-ZmeR"
+uri = "file://aurum-frontend.zip"
+type = "unspecified"
+title = "Aurum Frontend — aurum-frontend.zip"
