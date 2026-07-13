@@ -437,34 +437,21 @@ export default function Reserve() {
                       Secure your reservation instantly via digital payment.
                     </p>
 
-                    <div className="space-y-3 bg-black/40 p-4 rounded-lg border border-white/5">
+                    <div className="bg-black/40 p-4 rounded-lg border border-white/5">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Alias</span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                          {restaurantSettings.cliqType === "alias" ? "Alias" : "Phone"}
+                        </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{restaurantSettings.cliqAlias}</span>
+                          <span className="text-sm font-medium">{restaurantSettings.cliqValue}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCopy(restaurantSettings.cliqAlias, "alias");
+                              handleCopy(restaurantSettings.cliqValue, "cliq");
                             }}
                             className="text-primary hover:text-primary/70 transition-colors"
                           >
-                            {copied === "alias" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">Phone</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{restaurantSettings.cliqPhone}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopy(restaurantSettings.cliqPhone, "phone");
-                            }}
-                            className="text-primary hover:text-primary/70 transition-colors"
-                          >
-                            {copied === "phone" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {copied === "cliq" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>

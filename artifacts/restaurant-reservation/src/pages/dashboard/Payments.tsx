@@ -11,8 +11,8 @@ import { Check } from "lucide-react";
 export default function Payments() {
   const { settings, updateSettings } = useRestaurantStore();
   const [formData, setFormData] = useState({
-    cliqAlias: settings.cliqAlias,
-    cliqPhone: settings.cliqPhone,
+    cliqType: settings.cliqType,
+    cliqValue: settings.cliqValue,
     depositRequired: settings.depositRequired,
     allowPayUponArrival: settings.allowPayUponArrival,
   });
@@ -40,24 +40,44 @@ export default function Payments() {
           <CardTitle className="font-serif">CliQ Integration</CardTitle>
           <CardDescription>Details for customers to send digital payments.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6 p-6 pt-6">
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="cliqAlias">CliQ Alias</Label>
-              <Input 
-                id="cliqAlias" 
-                value={formData.cliqAlias}
-                onChange={(e) => setFormData({...formData, cliqAlias: e.target.value})}
-              />
+        <CardContent className="space-y-5 p-6 pt-6">
+          <div className="space-y-2">
+            <Label>Identifier Type</Label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, cliqType: "alias" })}
+                className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all ${
+                  formData.cliqType === "alias"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                }`}
+              >
+                Alias
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, cliqType: "phone" })}
+                className={`flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all ${
+                  formData.cliqType === "phone"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                }`}
+              >
+                Phone Number
+              </button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="cliqPhone">CliQ Phone Number</Label>
-              <Input 
-                id="cliqPhone" 
-                value={formData.cliqPhone}
-                onChange={(e) => setFormData({...formData, cliqPhone: e.target.value})}
-              />
-            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cliqValue">
+              {formData.cliqType === "alias" ? "CliQ Alias" : "CliQ Phone Number"}
+            </Label>
+            <Input
+              id="cliqValue"
+              value={formData.cliqValue}
+              onChange={(e) => setFormData({ ...formData, cliqValue: e.target.value })}
+              placeholder={formData.cliqType === "alias" ? "@your.alias" : "+962 6 123 4567"}
+            />
           </div>
         </CardContent>
       </Card>

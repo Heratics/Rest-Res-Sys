@@ -198,8 +198,8 @@ export const restaurantSettings = {
   phone: "+33 1 23 45 67 89",
   address: "14 Rue de Rivoli, 75001 Paris",
   openingHours: "Mon-Sun, 18:00 - 23:30",
-  cliqAlias: "@aurum.restaurant",
-  cliqPhone: "+962 6 123 4567",
+  cliqType: "alias" as "alias" | "phone",
+  cliqValue: "@aurum.restaurant",
   depositRequired: true,
   allowPayUponArrival: true,
 };
