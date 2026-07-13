@@ -1,0 +1,395 @@
+# Restaurant Reservation System - FRONTEND ONLY
+
+I want you to build **ONLY the frontend** of a modern restaurant reservation website.
+
+**This frontend will NOT be deployed from Replit.**
+
+It will later be copied into another project where Claude Code will build the backend and connect everything together. Because of that, **DO NOT build any backend whatsoever.**
+
+## IMPORTANT REQUIREMENTS
+
+* Frontend ONLY.
+* Do NOT create Express, Node.js backend, databases, API routes, authentication logic, server actions, or server-side code.
+* Do NOT use Replit authentication.
+* Do NOT use Firebase, Supabase, Clerk, Auth0, or any backend service.
+* Do NOT create serverless functions.
+* Do NOT create deployment configuration specific to Replit.
+
+The project should be a clean, standard **React + Vite + Tailwind CSS** application that can easily be copied into another project and deployed on **Render**.
+
+Everything should currently use:
+
+* Mock data
+* Placeholder JSON
+* Dummy API functions
+* Local component state
+
+The project should have clean folders such as:
+
+* src/components
+* src/pages
+* src/layouts
+* src/hooks
+* src/services (mock services only)
+* src/assets
+
+Keep components reusable and well organized.
+
+---
+
+# Design Style
+
+Create a premium, elegant restaurant website.
+
+Style:
+
+* Dark luxury theme
+* Black
+* Charcoal
+* Gold accents
+* Smooth animations
+* Rounded cards
+* Modern typography
+* Beautiful mobile responsiveness
+* Professional dashboard UI
+
+The website should feel like something a high-end restaurant would actually use.
+
+---
+
+# Public Pages
+
+## Home
+
+Include:
+
+* Hero section
+* Restaurant image placeholder
+* Restaurant description
+* Opening hours
+* Address
+* Contact information
+* Buttons:
+
+  * Reserve a Table
+  * My Reservation
+
+---
+
+## Reservation Flow
+
+Create a beautiful multi-step reservation experience.
+
+### Step 1
+
+Customer Account
+
+Fields:
+
+* Full Name
+* Phone Number
+* Password
+
+Include a note that an account is only required so customers can later access their reservation and QR code.
+
+---
+
+### Step 2
+
+Reservation Details
+
+Fields:
+
+* Date
+* Time
+* Number of Guests
+* Special Requests (optional)
+
+---
+
+### Step 3
+
+Payment
+
+Allow two choices.
+
+Option 1:
+
+Pay with CliQ
+
+Display:
+
+* Restaurant CliQ Alias
+* Restaurant Phone Number
+* Copy Button
+
+Use placeholder values.
+
+After payment show a button:
+
+"I've Sent the Payment"
+
+Display a message explaining that the restaurant will verify the payment.
+
+---
+
+Option 2
+
+Pay Upon Arrival
+
+Show a short explanation.
+
+---
+
+### Step 4
+
+Confirmation
+
+Show:
+
+* Reservation Status
+* QR Code Placeholder
+* Confirmation Number
+* Date
+* Time
+* Guests
+* Payment Method
+* Payment Status
+
+The QR should simply be a placeholder image.
+
+---
+
+# My Reservation
+
+Create a login page.
+
+Fields:
+
+* Phone Number
+* Password
+
+After login display a reservation page showing:
+
+* QR Code Placeholder
+* Reservation Details
+* Reservation Status
+* Payment Status
+* Confirmation Number
+* Cancel Reservation Button
+
+Assume customers only ever have one active reservation.
+
+---
+
+# Owner Dashboard
+
+Create a professional dashboard UI.
+
+Pages:
+
+Dashboard
+
+Reservations
+
+Calendar
+
+Tables
+
+QR Scanner
+
+Payments
+
+Settings
+
+---
+
+Dashboard
+
+Show beautiful statistic cards:
+
+Today's Reservations
+
+Upcoming Reservations
+
+Checked In
+
+Pending Payments
+
+Cancelled Reservations
+
+---
+
+Reservations
+
+Modern searchable table.
+
+Columns:
+
+Customer
+
+Phone
+
+Guests
+
+Date
+
+Time
+
+Payment
+
+Reservation Status
+
+Actions
+
+Include placeholder buttons:
+
+View
+
+Edit
+
+Cancel
+
+Check In
+
+Confirm Payment
+
+---
+
+Calendar
+
+Modern reservation calendar UI.
+
+---
+
+Tables
+
+Display restaurant tables visually.
+
+Each table should have:
+
+Table Number
+
+Capacity
+
+Status
+
+Reserved / Available
+
+---
+
+QR Scanner
+
+Design a page that contains:
+
+Camera Placeholder
+
+Scan Area
+
+Reservation Details Card
+
+Check In Button
+
+Use mock data.
+
+---
+
+Payments
+
+Show:
+
+CliQ Alias
+
+Phone Number
+
+Deposit Required Toggle
+
+Allow Pay Upon Arrival Toggle
+
+Use placeholder settings.
+
+---
+
+Settings
+
+Restaurant Name
+
+Phone Number
+
+Address
+
+Opening Hours
+
+Theme
+
+Profile
+
+All placeholder.
+
+---
+
+# Components
+
+Create reusable components including:
+
+Navbar
+
+Footer
+
+Sidebar
+
+Cards
+
+Buttons
+
+Inputs
+
+Reservation Card
+
+QR Card
+
+Payment Card
+
+Statistics Cards
+
+Modal
+
+Confirmation Dialog
+
+Loading States
+
+Empty States
+
+---
+
+# Responsiveness
+
+The entire website must work perfectly on:
+
+Desktop
+
+Tablet
+
+Mobile
+
+---
+
+# Code Quality
+
+Write clean production-quality React code.
+
+Use reusable components.
+
+Keep styling consistent.
+
+Do NOT implement any backend logic.
+
+Do NOT implement authentication.
+
+Do NOT implement databases.
+
+Do NOT implement API calls.
+
+Everything should be frontend only with mock data.
+
+This frontend will later be integrated into a Node.js + Express + MySQL backend by Claude Code, so keep all logic separated from backend concerns and make the project easy to integrate.

@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Restaurant Reservation System"
+version = "1.0.0"
+id = "artifacts/restaurant-reservation"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18375
+
+[services.development]
+run = "pnpm --filter @workspace/restaurant-reservation run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/restaurant-reservation", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/restaurant-reservation/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18375"
+BASE_PATH = "/"
