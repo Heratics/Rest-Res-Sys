@@ -1,0 +1,198 @@
+Frontend Revision - Authentication & Reservation Flow
+
+The frontend looks great visually. Do not redesign the theme, colors, typography, layout, or dashboard. I want to keep the current luxury design.
+
+I only want to improve the user experience and authentication flow.
+
+Remember: this is still a FRONTEND ONLY project.
+
+Do NOT add a backend.
+Do NOT implement authentication.
+Do NOT implement JWT.
+Do NOT add APIs.
+Do NOT use Firebase, Supabase, Clerk, Auth0, Replit Auth, or any server.
+
+Use mock data only.
+
+Claude Code will later implement the entire backend.
+
+Change the Reservation Flow
+
+Currently, every time someone clicks Reserve a Table, they are forced to register again.
+
+This is NOT the desired behavior.
+
+Instead, the reservation flow should work like a real application.
+
+Scenario 1 - First Time Visitor
+
+Customer clicks:
+
+Reserve a Table
+
+Show a page asking:
+
+Welcome
+
+Have you reserved with us before?
+
+Two large buttons:
+
+Log In
+
+or
+
+Create Account
+
+Include a short explanation:
+
+"Create an account once so you can access your reservation and QR code anytime."
+
+Create Account
+
+Only ask for:
+
+Full Name
+Phone Number
+Password
+
+After clicking Continue, assume the user is logged in and continue directly to the reservation details step.
+
+Do NOT return to a login screen.
+
+Log In
+
+Ask only for:
+
+Phone Number
+Password
+
+After clicking Continue, assume login was successful and continue directly to Reservation Details.
+
+Scenario 2 - Logged In User
+
+Assume the customer already has a valid JWT session.
+
+The frontend should support a mock "logged in" state.
+
+When logged in:
+
+Clicking Reserve a Table should immediately open the Reservation Details page.
+
+The account creation/login page should be skipped completely.
+
+Use mock authentication state only.
+
+Navigation
+
+The navbar should change depending on authentication state.
+
+Logged Out
+
+Home
+
+Reservations
+
+My Reservation
+
+Login
+
+Logged In
+
+Home
+
+Reservations
+
+My Reservation
+
+👤 Customer Name
+
+Clicking the customer name should open a dropdown:
+
+My Reservation
+New Reservation
+Logout
+
+Use mock data.
+
+My Reservation Page
+
+Improve the flow.
+
+If the customer is logged in (mock authenticated):
+
+Opening My Reservation should immediately display:
+
+QR Code
+Reservation Status
+Payment Status
+Reservation Details
+Cancel Reservation Button
+
+No login screen.
+
+If the customer is logged out:
+
+Opening My Reservation should first display:
+
+Phone Number
+
+Password
+
+Login Button
+
+After mock login, display the reservation page.
+
+Reservation Form Improvements
+
+If the customer is already logged in:
+
+Do NOT ask again for:
+
+Name
+Phone Number
+
+The reservation form should begin directly with:
+
+Reservation Details
+
+Date
+Time
+Guests
+Special Requests
+
+Then continue to:
+
+Payment
+
+Confirmation
+
+Session Persistence (Frontend Mock)
+
+Create a mock session system that simulates JWT authentication.
+
+This is ONLY for UI purposes.
+
+Pretend that:
+
+User logs in once.
+Refreshing the page keeps them logged in.
+Closing and reopening the site keeps them logged in.
+
+Use local mock state only.
+
+Claude Code will later replace this with a real JWT authentication system using secure HttpOnly cookies.
+
+Keep Everything Else
+
+Do NOT redesign the dashboard.
+
+Do NOT redesign the booking pages.
+
+Do NOT redesign the QR page.
+
+Do NOT redesign the owner pages.
+
+Only improve the authentication flow and reservation experience.
+
+The goal is to make this frontend feel like a polished production application that Claude Code can later connect to a Node.js + Express + MySQL backend with JWT authentication and QR reservation management.

@@ -1,28 +1,204 @@
-import { ReactNode } from "react";
-import { Link } from "wouter";
+import { ReactNode, useState, useRef, useEffect } from "react";
+import { Link, useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, ChevronDown, User, LogOut, CalendarPlus, QrCode } from "lucide-react";
+import { useAuthStore } from "@/services/authStore";
 
 export function PublicLayout({ children }: { children: ReactNode }) {
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const [location] = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
+
+  const navLinks = [
+    { href: "/", label: "HOME" },
+    { href: "/reserve", label: "RESERVATIONS" },
+    { href: "/my-reservation", label: "MY BOOKING" },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground relative">
-      <div className="fixed inset-0 bg-noise z-0"></div>
-      
+      <div className="fixed inset-0 bg-noise z-0" />
+
+      {/* ── Navbar ── */}
       <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-white/5">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="font-serif text-2xl tracking-widest text-primary flex items-center gap-2">
+          {/* Logo */}
+          <Link href="/" className="font-serif text-2xl tracking-widest text-primary">
             AURUM
           </Link>
-          <nav className="hidden md:flex gap-8 text-sm font-medium tracking-wide">
-            <Link href="/" className="hover:text-primary transition-colors">HOME</Link>
-            <Link href="/reserve" className="hover:text-primary transition-colors">RESERVATIONS</Link>
-            <Link href="/my-reservation" className="hover:text-primary transition-colors">MY BOOKING</Link>
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`transition-colors ${
+                  location === link.href ? "text-primary" : "hover:text-primary text-foreground/80"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            {/* Auth section */}
+            {!isAuthenticated ? (
+              <Link
+                href="/my-reservation"
+                className="ml-2 px-4 py-2 rounded-lg border border-primary/40 text-primary hover:bg-primary/10 transition-colors text-sm tracking-wide"
+              >
+                LOGIN
+              </Link>
+            ) : (
+              <div className="relative ml-2" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen((v) => !v)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-white/10 hover:border-primary/40 transition-colors text-sm"
+                >
+                  <User className="w-4 h-4 text-primary" />
+                  <span className="text-white max-w-[140px] truncate">{user?.name}</span>
+                  <ChevronDown
+                    className={`w-3 h-3 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {dropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-52 bg-card border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                    >
+                      <div className="px-4 py-3 border-b border-white/5">
+                        <p className="text-xs text-muted-foreground">Signed in as</p>
+                        <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user?.phone}</p>
+                      </div>
+                      <div className="py-1">
+                        <Link
+                          href="/my-reservation"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
+                        >
+                          <QrCode className="w-4 h-4 text-primary" />
+                          My Reservation
+                        </Link>
+                        <Link
+                          href="/reserve"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
+                        >
+                          <CalendarPlus className="w-4 h-4 text-primary" />
+                          New Reservation
+                        </Link>
+                        <div className="border-t border-white/5 my-1" />
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            logout();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </nav>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 text-muted-foreground hover:text-white transition-colors"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-md overflow-hidden"
+            >
+              <nav className="container mx-auto px-6 py-6 flex flex-col gap-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`py-3 text-sm font-medium tracking-wide border-b border-white/5 transition-colors ${
+                      location === link.href ? "text-primary" : "text-foreground/80 hover:text-primary"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+
+                {!isAuthenticated ? (
+                  <Link
+                    href="/my-reservation"
+                    className="mt-4 py-3 text-center rounded-lg border border-primary/40 text-primary text-sm tracking-wide"
+                  >
+                    LOGIN
+                  </Link>
+                ) : (
+                  <div className="mt-4 space-y-1">
+                    <div className="py-3 border-b border-white/5">
+                      <p className="text-xs text-muted-foreground">Signed in as</p>
+                      <p className="text-sm font-medium text-white">{user?.name}</p>
+                    </div>
+                    <Link href="/my-reservation" className="flex items-center gap-3 py-3 text-sm hover:text-primary transition-colors">
+                      <QrCode className="w-4 h-4 text-primary" /> My Reservation
+                    </Link>
+                    <Link href="/reserve" className="flex items-center gap-3 py-3 text-sm hover:text-primary transition-colors">
+                      <CalendarPlus className="w-4 h-4 text-primary" /> New Reservation
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center gap-3 py-3 text-sm text-destructive"
+                    >
+                      <LogOut className="w-4 h-4" /> Logout
+                    </button>
+                  </div>
+                )}
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
-      
+
       <main className="flex-1 relative z-10 pt-20">
         {children}
       </main>
-      
+
       <footer className="relative z-10 border-t border-white/5 py-12 text-center text-muted-foreground bg-card">
         <div className="container mx-auto px-6">
           <p className="font-serif text-xl text-primary mb-4">AURUM</p>
