@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { Route, Switch, Router as WouterRouter, useLocation, Redirect } from "wouter";
+import { Route, Switch, Router as WouterRouter, Redirect } from "wouter";
 
 import { StoreProvider } from "@/services/StoreContext";
 import { useOwnerAuth, useEmployeeAuth } from "@/services/authStore";
@@ -10,24 +10,27 @@ import { PublicLayout } from "@/layouts/PublicLayout";
 import { OwnerLayout } from "@/layouts/OwnerLayout";
 import { EmployeeLayout } from "@/layouts/EmployeeLayout";
 
-// Customer pages
+// Public
 import Home from "@/pages/public/Home";
-import Reserve from "@/pages/public/Reserve";
-import MyReservation from "@/pages/public/MyReservation";
 
 // Auth pages
 import OwnerLogin from "@/pages/owner/OwnerLogin";
 import EmployeeLogin from "@/pages/employee/EmployeeLogin";
 
-// Owner pages (shared with employees where applicable)
+// Shared dashboard pages (used by both owner & employee routes)
 import DashboardOverview from "@/pages/dashboard/DashboardOverview";
-import Reservations from "@/pages/dashboard/Reservations";
-import Calendar from "@/pages/dashboard/Calendar";
-import Tables from "@/pages/dashboard/Tables";
+import NewReservation from "@/pages/dashboard/NewReservation";
+import ReservationsPage from "@/pages/dashboard/ReservationsPage";
+import GuestsPage from "@/pages/dashboard/GuestsPage";
 import QrScanner from "@/pages/dashboard/QrScanner";
+
+// Owner-only pages
 import Payments from "@/pages/dashboard/Payments";
 import Settings from "@/pages/dashboard/Settings";
 import Employees from "@/pages/owner/Employees";
+
+// Ticket (public — no auth)
+import TicketPage from "@/pages/ticket/TicketPage";
 
 const queryClient = new QueryClient();
 
@@ -63,40 +66,36 @@ function NotFound() {
 function Router() {
   return (
     <Switch>
-      {/* ── Public / Customer ── */}
+      {/* Public */}
       <Route path="/" component={() => <PublicLayout><Home /></PublicLayout>} />
-      <Route path="/reserve" component={() => <PublicLayout><Reserve /></PublicLayout>} />
-      <Route path="/my-reservation" component={() => <PublicLayout><MyReservation /></PublicLayout>} />
 
-      {/* ── Auth pages (standalone, no layout wrapper) ── */}
-      <Route path="/owner-login" component={OwnerLogin} />
+      {/* Auth */}
+      <Route path="/owner-login"    component={OwnerLogin} />
       <Route path="/employee-login" component={EmployeeLogin} />
 
-      {/* ── Owner Dashboard ── */}
-      <Route path="/owner" component={() => <OwnerRoute><DashboardOverview /></OwnerRoute>} />
-      <Route path="/owner/reservations" component={() => <OwnerRoute><Reservations /></OwnerRoute>} />
-      <Route path="/owner/calendar" component={() => <OwnerRoute><Calendar /></OwnerRoute>} />
-      <Route path="/owner/tables" component={() => <OwnerRoute><Tables /></OwnerRoute>} />
-      <Route path="/owner/qr-scanner" component={() => <OwnerRoute><QrScanner /></OwnerRoute>} />
-      <Route path="/owner/payments" component={() => <OwnerRoute><Payments /></OwnerRoute>} />
-      <Route path="/owner/settings" component={() => <OwnerRoute><Settings /></OwnerRoute>} />
-      <Route path="/owner/employees" component={() => <OwnerRoute><Employees /></OwnerRoute>} />
+      {/* Digital ticket — public, no auth required */}
+      <Route path="/ticket/:token"  component={() => <TicketPage />} />
 
-      {/* ── Legacy /dashboard/* → redirect to /owner/* ── */}
-      <Route path="/dashboard" component={() => <Redirect to="/owner" />} />
-      <Route path="/dashboard/reservations" component={() => <Redirect to="/owner/reservations" />} />
-      <Route path="/dashboard/calendar" component={() => <Redirect to="/owner/calendar" />} />
-      <Route path="/dashboard/tables" component={() => <Redirect to="/owner/tables" />} />
-      <Route path="/dashboard/qr-scanner" component={() => <Redirect to="/owner/qr-scanner" />} />
-      <Route path="/dashboard/payments" component={() => <Redirect to="/owner/payments" />} />
-      <Route path="/dashboard/settings" component={() => <Redirect to="/owner/settings" />} />
+      {/* ── Owner Dashboard ── */}
+      <Route path="/owner"                   component={() => <OwnerRoute><DashboardOverview /></OwnerRoute>} />
+      <Route path="/owner/new-reservation"   component={() => <OwnerRoute><NewReservation /></OwnerRoute>} />
+      <Route path="/owner/reservations"      component={() => <OwnerRoute><ReservationsPage /></OwnerRoute>} />
+      <Route path="/owner/qr-scanner"        component={() => <OwnerRoute><QrScanner /></OwnerRoute>} />
+      <Route path="/owner/guests"            component={() => <OwnerRoute><GuestsPage /></OwnerRoute>} />
+      <Route path="/owner/payments"          component={() => <OwnerRoute><Payments /></OwnerRoute>} />
+      <Route path="/owner/employees"         component={() => <OwnerRoute><Employees /></OwnerRoute>} />
+      <Route path="/owner/settings"          component={() => <OwnerRoute><Settings /></OwnerRoute>} />
 
       {/* ── Employee Dashboard ── */}
-      <Route path="/employee" component={() => <EmployeeRoute><DashboardOverview /></EmployeeRoute>} />
-      <Route path="/employee/reservations" component={() => <EmployeeRoute><Reservations /></EmployeeRoute>} />
-      <Route path="/employee/calendar" component={() => <EmployeeRoute><Calendar /></EmployeeRoute>} />
-      <Route path="/employee/tables" component={() => <EmployeeRoute><Tables /></EmployeeRoute>} />
-      <Route path="/employee/qr-scanner" component={() => <EmployeeRoute><QrScanner /></EmployeeRoute>} />
+      <Route path="/employee"                  component={() => <EmployeeRoute><DashboardOverview /></EmployeeRoute>} />
+      <Route path="/employee/new-reservation"  component={() => <EmployeeRoute><NewReservation /></EmployeeRoute>} />
+      <Route path="/employee/reservations"     component={() => <EmployeeRoute><ReservationsPage /></EmployeeRoute>} />
+      <Route path="/employee/qr-scanner"       component={() => <EmployeeRoute><QrScanner /></EmployeeRoute>} />
+      <Route path="/employee/guests"           component={() => <EmployeeRoute><GuestsPage /></EmployeeRoute>} />
+
+      {/* Legacy redirects */}
+      <Route path="/dashboard"            component={() => <Redirect to="/owner" />} />
+      <Route path="/dashboard/reservations" component={() => <Redirect to="/owner/reservations" />} />
 
       <Route component={NotFound} />
     </Switch>
