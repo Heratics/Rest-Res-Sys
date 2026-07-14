@@ -194,12 +194,12 @@ export const mockTables: Table[] = [
 ];
 
 export const restaurantSettings = {
-  name: "Aurum",
-  phone: "+33 1 23 45 67 89",
-  address: "14 Rue de Rivoli, 75001 Paris",
-  openingHours: "Mon-Sun, 18:00 - 23:30",
+  name: "BOOMCLUB",
+  phone: "+962 790022006",
+  address: "6th Cir., Amman",
+  openingHours: "Tue-Mon, 22:00 - 03:30",
   cliqType: "alias" as "alias" | "phone",
-  cliqValue: "@aurum.restaurant",
+  cliqValue: "@BOOMCLUB.restaurant",
   depositRequired: true,
   allowPayUponArrival: true,
 };

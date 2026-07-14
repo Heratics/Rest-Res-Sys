@@ -155,7 +155,7 @@ export default function Reserve() {
                   <div className="grid md:grid-cols-2 gap-4">
                     <button
                       onClick={() => setAuthView("login")}
-                      className="group bg-card border border-white/10 hover:border-primary/50 rounded-2xl p-8 text-left transition-all hover:shadow-[0_0_20px_rgba(201,168,76,0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className="group bg-card border border-white/10 hover:border-primary/50 rounded-2xl p-8 text-left transition-all hover:shadow-[0_0_20px_rgba(227,190,89,0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-5 text-primary group-hover:bg-primary/20 transition-colors">
                         <LogIn className="w-6 h-6" />
@@ -169,7 +169,7 @@ export default function Reserve() {
 
                     <button
                       onClick={() => setAuthView("register")}
-                      className="group bg-primary hover:bg-primary/90 border border-primary rounded-2xl p-8 text-left transition-all shadow-[0_0_25px_rgba(201,168,76,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className="group bg-primary hover:bg-primary/90 border border-primary rounded-2xl p-8 text-left transition-all shadow-[0_0_25px_rgba(227,190,89,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       <div className="w-12 h-12 bg-black/20 rounded-full flex items-center justify-center mb-5 text-primary-foreground">
                         <UserPlus className="w-6 h-6" />
@@ -419,7 +419,7 @@ export default function Reserve() {
                 <Card
                   className={`cursor-pointer transition-all ${
                     formData.paymentMethod === "CliQ"
-                      ? "border-primary ring-1 ring-primary shadow-[0_0_15px_rgba(201,168,76,0.15)]"
+                      ? "border-primary ring-1 ring-primary shadow-[0_0_15px_rgba(227,190,89,0.15)]"
                       : "hover:border-border/80"
                   }`}
                   onClick={() => setFormData({ ...formData, paymentMethod: "CliQ" })}
@@ -469,7 +469,7 @@ export default function Reserve() {
                 <Card
                   className={`cursor-pointer transition-all ${
                     formData.paymentMethod === "Pay Upon Arrival"
-                      ? "border-primary ring-1 ring-primary shadow-[0_0_15px_rgba(201,168,76,0.15)]"
+                      ? "border-primary ring-1 ring-primary shadow-[0_0_15px_rgba(227,190,89,0.15)]"
                       : "hover:border-border/80"
                   }`}
                   onClick={() => setFormData({ ...formData, paymentMethod: "Pay Upon Arrival" })}

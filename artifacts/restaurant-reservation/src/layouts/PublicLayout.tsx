@@ -9,9 +9,13 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
       {/* Navbar */}
       <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-white/5">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="font-serif text-2xl tracking-widest text-primary">
-            AURUM
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between gap-6">
+          {/* Logo */}
+          <Link
+            href="/"
+            className="font-serif text-2xl tracking-widest text-primary shrink-0"
+          >
+            BOOMCLUB
           </Link>
           <div className="flex items-center gap-3">
             <Link
@@ -36,13 +40,25 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
       <footer className="relative z-10 border-t border-white/5 py-12 text-center text-muted-foreground bg-card">
         <div className="container mx-auto px-6">
-          <p className="font-serif text-xl text-primary mb-4">AURUM</p>
+          <p className="font-serif text-xl text-primary mb-4">BOOMCLUB</p>
           <p className="text-sm mb-8">14 Rue de Rivoli, 75001 Paris</p>
           <div className="flex justify-center gap-6 text-sm flex-wrap">
-            <Link href="/owner-login" className="hover:text-foreground transition-colors">Owner Portal</Link>
-            <Link href="/employee-login" className="hover:text-foreground transition-colors">Staff Portal</Link>
+            <Link
+              href="/owner-login"
+              className="hover:text-foreground transition-colors"
+            >
+              Owner Portal
+            </Link>
+            <Link
+              href="/employee-login"
+              className="hover:text-foreground transition-colors"
+            >
+              Staff Portal
+            </Link>
           </div>
-          <p className="text-xs mt-12 opacity-50">&copy; {new Date().getFullYear()} Aurum Restaurant. All rights reserved.</p>
+          <p className="text-xs mt-12 opacity-50">
+            &copy; {new Date().getFullYear()} BOOMCLUB. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>

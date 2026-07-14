@@ -46,7 +46,7 @@ export default function OwnerLogin() {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <p className="font-serif text-3xl tracking-widest text-primary mb-1">AURUM</p>
+          <p className="font-serif text-3xl tracking-widest text-primary mb-1">BOOMCLUB</p>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Owner Portal</p>
         </div>
 

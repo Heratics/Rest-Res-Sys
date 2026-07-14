@@ -11,9 +11,9 @@ import {
 } from "./mockData";
 
 // ─── Session keys ───────────────────────────────────────────────────────────
-const CUSTOMER_SESSION_KEY = "aurum_mock_session";
-const OWNER_SESSION_KEY = "aurum_owner_session";
-const EMPLOYEE_SESSION_KEY = "aurum_employee_session";
+const CUSTOMER_SESSION_KEY = "BOOMCLUB_mock_session";
+const OWNER_SESSION_KEY = "BOOMCLUB_owner_session";
+const EMPLOYEE_SESSION_KEY = "BOOMCLUB_employee_session";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface AuthUser {
