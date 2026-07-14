@@ -36,7 +36,7 @@ export function OwnerLayout({ children }: { children: ReactNode }) {
     <>
       <div className="p-8 pb-10 flex flex-col items-center gap-1 border-b border-sidebar-border">
         <Link href="/owner" className="font-serif text-2xl tracking-widest text-primary cursor-pointer">
-          AURUM
+          BOOMCLUB
         </Link>
         <span className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Owner Portal</span>
         {owner && (
@@ -97,7 +97,7 @@ export function OwnerLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-5 h-16 border-b border-border bg-card/90 backdrop-blur-md z-30">
-        <span className="font-serif text-xl tracking-widest text-primary">AURUM</span>
+        <span className="font-serif text-xl tracking-widest text-primary">BOOMCLUB</span>
         <button
           className="p-2 text-muted-foreground hover:text-white transition-colors"
           onClick={() => setMobileOpen((v) => !v)}

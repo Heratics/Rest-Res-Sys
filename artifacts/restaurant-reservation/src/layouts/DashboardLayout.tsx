@@ -21,7 +21,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card relative z-20">
-        <span className="font-serif text-xl tracking-widest text-primary">AURUM</span>
+        <span className="font-serif text-xl tracking-widest text-primary">BOOMCLUB</span>
         <button className="p-2"><Menu className="w-5 h-5" /></button>
       </div>
 
@@ -29,7 +29,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-border relative z-20">
         <div className="p-8 pb-12 flex justify-center">
           <Link href="/dashboard" className="font-serif text-2xl tracking-widest text-primary cursor-pointer">
-            AURUM
+            BOOMCLUB
           </Link>
         </div>
         

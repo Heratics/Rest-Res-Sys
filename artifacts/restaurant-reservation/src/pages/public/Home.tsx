@@ -20,12 +20,12 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: "easeOut" }}
           >
-            <h2 className="text-primary font-medium tracking-[0.3em] text-sm md:text-base uppercase mb-6">A Culinary Journey</h2>
+            <h2 className="text-primary font-medium tracking-[0.3em] text-sm md:text-base uppercase mb-6">A Premium Experience</h2>
             <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl text-white mb-8 tracking-tighter">
-              AURUM
+              BOOMCLUB
             </h1>
             <p className="text-muted-foreground max-w-xl mx-auto text-lg md:text-xl font-light mb-12">
-              Experience the convergence of classical technique and modern gastronomy in an atmosphere of uncompromised luxury.
+              Book your table online in seconds. Fast, simple, and designed for an exceptional dining experience.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
@@ -56,7 +56,7 @@ export default function Home() {
                 Step into a world where every detail has been meticulously curated. The warm glow of gold accents against deep charcoal walls creates a sense of intimacy and occasion.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Whether for a celebratory feast or a quiet, romantic evening, Aurum provides the perfect backdrop for unforgettable moments.
+                Whether for a celebratory feast or a quiet, romantic evening, BOOMCLUB provides the perfect backdrop for unforgettable moments.
               </p>
             </motion.div>
             
@@ -68,7 +68,7 @@ export default function Home() {
               transition={{ duration: 0.8 }}
             >
               <div className="absolute inset-0 bg-gradient-to-tr from-black/80 to-transparent z-10"></div>
-              <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(201,168,76,0.1)_25%,transparent_25%,transparent_50%,rgba(201,168,76,0.1)_50%,rgba(201,168,76,0.1)_75%,transparent_75%,transparent)] bg-[length:20px_20px] opacity-20 z-0"></div>
+              <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(227,190,89,0.1)_25%,transparent_25%,transparent_50%,rgba(227,190,89,0.1)_50%,rgba(227,190,89,0.1)_75%,transparent_75%,transparent)] bg-[length:20px_20px] opacity-20 z-0"></div>
               <div className="w-full h-full bg-card/50 flex flex-col items-center justify-center p-12 text-center relative z-20">
                  <div className="w-24 h-24 border border-primary/30 rounded-full flex items-center justify-center mb-8">
                    <div className="w-20 h-20 border border-primary/60 rounded-full flex items-center justify-center">

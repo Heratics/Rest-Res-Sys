@@ -64,7 +64,7 @@ export default function QrScanner() {
                   <motion.div 
                     animate={{ top: ["0%", "100%", "0%"] }}
                     transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                    className="absolute left-0 right-0 h-[2px] bg-primary shadow-[0_0_15px_rgba(201,168,76,0.8)] z-10"
+                    className="absolute left-0 right-0 h-[2px] bg-primary shadow-[0_0_15px_rgba(227,190,89,0.8)] z-10"
                   />
                   
                   <QrCode className="w-full h-full text-white/5 p-8" />
