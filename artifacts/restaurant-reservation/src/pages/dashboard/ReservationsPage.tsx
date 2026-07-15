@@ -1,25 +1,21 @@
 import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "wouter";
+import { AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useReservationStore } from "@/services/reservationStore";
-import { useOwnerAuth } from "@/services/authStore";
-import { useEmployeeAuth } from "@/services/StoreContext";
-import { useWorkflowStore } from "@/services/workflowStore";
-import { Reservation, ReservationStatus } from "@/services/mockData";
+import { useFloorPlanStore } from "@/services/floorPlanStore";
+import { useOwnerAuth, useEmployeeAuth } from "@/services/StoreContext";
+import { ReservationDetailsModal } from "@/components/ReservationDetailsModal";
+import { Reservation } from "@/services/mockData";
 import { isIncoming } from "@/services/reservationOperations";
-import {
-  Search, Ban, X, Users, Clock, Map,
-  Eye, CalendarPlus, MapPin, ArrowRight,
-} from "lucide-react";
+import { Search, CalendarPlus, Clock, Users, MapPin } from "lucide-react";
 import { Link } from "wouter";
 
 // ─── Types & Constants ────────────────────────────────────────────────────────
 
-type Tab = "Incoming" | "Assigned" | "Seated" | "Completed" | "Cancelled" | "All";
-const TABS: Tab[] = ["Incoming", "Assigned", "Seated", "Completed", "Cancelled", "All"];
+type Tab = "Incoming" | "Waiting For Guests" | "Seated" | "Completed" | "Cancelled" | "All";
+const TABS: Tab[] = ["Incoming", "Waiting For Guests", "Seated", "Completed", "Cancelled", "All"];
 
 const STATUS_STYLES: Record<string, string> = {
   Pending:      "bg-amber-500/10 text-amber-400 border-amber-500/20",
@@ -33,7 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = {
   Pending:      "Incoming",
   Confirmed:    "Incoming",
-  "Checked In": "Assigned",
+  "Checked In": "Waiting for Guests",
   Seated:       "Seated",
   Completed:    "Completed",
   Cancelled:    "Cancelled",
@@ -41,27 +37,26 @@ const STATUS_LABEL: Record<string, string> = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+function elapsed(iso?: string) {
+  if (!iso) return null;
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return "< 1 min";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  return m % 60 > 0 ? `${h}h ${m % 60}m` : `${h}h`;
 }
 
 function initials(name: string) {
-  return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  return name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
 }
 
 function matchesTab(r: Reservation, tab: Tab): boolean {
   if (tab === "All") return true;
-  if (tab === "Incoming")  return isIncoming(r);
-  if (tab === "Assigned")  return r.status === "Checked In";
-  if (tab === "Seated")    return r.status === "Seated";
-  if (tab === "Completed") return r.status === "Completed";
-  if (tab === "Cancelled") return r.status === "Cancelled";
+  if (tab === "Incoming")          return isIncoming(r);
+  if (tab === "Waiting For Guests") return r.status === "Checked In";
+  if (tab === "Seated")            return r.status === "Seated";
+  if (tab === "Completed")         return r.status === "Completed";
+  if (tab === "Cancelled")         return r.status === "Cancelled";
   return false;
 }
 
@@ -69,302 +64,228 @@ function matchesTab(r: Reservation, tab: Tab): boolean {
 
 function ReservationCard({
   res,
-  canAssignTable,
-  onChooseTable,
-  onCancel,
-  onView,
-  confirmCancelId,
-  setConfirmCancelId,
+  assignedTableNumber,
+  assignedFloor,
+  onClick,
 }: {
   res: Reservation;
-  canAssignTable: boolean;
-  onChooseTable: () => void;
-  onCancel: () => void;
-  onView: () => void;
-  confirmCancelId: string | null;
-  setConfirmCancelId: (id: string | null) => void;
+  assignedTableNumber?: string;
+  assignedFloor?: number;
+  onClick: () => void;
 }) {
-  const canCancel = res.status !== "Cancelled" && res.status !== "Completed"
-    && res.status !== "Seated" && res.status !== "Checked In";
-  const isConfirmingCancel = confirmCancelId === res.id;
-  const showChooseTable = canAssignTable && isIncoming(res);
+  const waitingFrom = isIncoming(res)
+    ? res.createdAt
+    : res.status === "Checked In"
+      ? res.assignedAt
+      : undefined;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      className="bg-card border border-white/5 rounded-xl p-4 hover:border-white/10 transition-all"
+    <button
+      onClick={onClick}
+      className="w-full text-left bg-card border border-white/5 rounded-xl p-4 hover:border-white/12 transition-all"
     >
       <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-serif text-sm shrink-0">
+        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-serif text-xs shrink-0 mt-0.5">
           {initials(res.customer.name)}
         </div>
-
-        {/* Details */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <div>
-              <p className="font-medium text-white truncate">{res.customer.name}</p>
-              <p className="text-xs text-muted-foreground font-mono">{res.confirmationNumber}</p>
-            </div>
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-medium text-white text-sm truncate">{res.customer.name}</p>
             <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status] ?? STATUS_STYLES.Pending}`}>
               {STATUS_LABEL[res.status] ?? res.status}
             </span>
           </div>
-
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5 mb-2">
-            <span className="flex items-center gap-1"><Users className="w-3 h-3" />{res.guests} {res.guests === 1 ? "guest" : "guests"}</span>
-            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(res.createdAt)}</span>
-          </div>
-
-          {res.specialRequests && (
-            <p className="text-xs text-muted-foreground/70 bg-black/20 rounded px-2 py-1 border border-white/5 mb-2 truncate">
-              {res.specialRequests}
-            </p>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={onView}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-muted-foreground hover:text-white hover:bg-white/5 border border-border transition-all">
-              <Eye className="w-3 h-3" /> View
-            </button>
-            {showChooseTable && (
-              <button onClick={onChooseTable}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-primary/90 hover:bg-primary text-black transition-all">
-                <MapPin className="w-3 h-3" /> Choose Table
-                <ArrowRight className="w-3 h-3" />
-              </button>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Users className="w-3 h-3" />{res.guests} guests
+            </span>
+            {waitingFrom && (
+              <span className="flex items-center gap-1 text-amber-400/70">
+                <Clock className="w-3 h-3" />{elapsed(waitingFrom)} wait
+              </span>
             )}
-            {canCancel && !isConfirmingCancel && (
-              <button onClick={() => setConfirmCancelId(res.id)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-red-400/70 hover:text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-all">
-                <Ban className="w-3 h-3" /> Cancel
-              </button>
-            )}
-            {isConfirmingCancel && (
-              <span className="flex items-center gap-1">
-                <button onClick={onCancel}
-                  className="px-2.5 py-1 rounded-lg text-xs bg-destructive text-white font-medium">
-                  Confirm
-                </button>
-                <button onClick={() => setConfirmCancelId(null)}
-                  className="px-2.5 py-1 rounded-lg text-xs border border-border text-muted-foreground">
-                  No
-                </button>
+            {(assignedTableNumber || res.assignedTableNumber) && (
+              <span className="flex items-center gap-1 text-blue-400/70">
+                <MapPin className="w-3 h-3" />
+                Floor {assignedFloor ?? res.assignedFloor} · Table {assignedTableNumber ?? res.assignedTableNumber}
               </span>
             )}
           </div>
+          {res.specialRequests && (
+            <p className="text-xs text-muted-foreground/60 italic mt-1 truncate">"{res.specialRequests}"</p>
+          )}
         </div>
       </div>
-    </motion.div>
-  );
-}
-
-// ─── View Detail Modal ────────────────────────────────────────────────────────
-
-function DetailModal({ res, onClose }: { res: Reservation; onClose: () => void }) {
-  return (
-    <>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" onClick={onClose} />
-      <motion.div initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-card border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl">
-          <div className="flex items-center justify-between p-6 border-b border-white/5">
-            <h2 className="font-serif text-xl text-white">Reservation Details</h2>
-            <button onClick={onClose} className="text-muted-foreground hover:text-white transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-serif">
-                {initials(res.customer.name)}
-              </div>
-              <div>
-                <p className="font-medium text-white">{res.customer.name}</p>
-                <p className="text-sm text-muted-foreground">{res.customer.phone}</p>
-              </div>
-              <span className={`ml-auto shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status] ?? STATUS_STYLES.Pending}`}>
-                {STATUS_LABEL[res.status] ?? res.status}
-              </span>
-            </div>
-
-            <div className="bg-black/30 rounded-xl border border-white/5 divide-y divide-white/5">
-              {[
-                { label: "Confirmation", value: res.confirmationNumber },
-                { label: "Guests",       value: `${res.guests}` },
-                { label: "Phone",        value: res.customer.phone },
-                { label: "Added",        value: timeAgo(res.createdAt) },
-                ...(res.specialRequests ? [{ label: "Notes", value: res.specialRequests }] : []),
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between items-start px-4 py-3 text-sm gap-4">
-                  <span className="text-muted-foreground shrink-0">{label}</span>
-                  <span className="text-white text-right">{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="p-6 pt-0">
-            <Button variant="outline" className="w-full" onClick={onClose}>Close</Button>
-          </div>
-        </div>
-      </motion.div>
-    </>
+    </button>
   );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ReservationsPage() {
-  const { reservations, updateStatus } = useReservationStore();
+  const { reservations } = useReservationStore();
+  const { floorTables } = useFloorPlanStore();
   const { isAuthenticated: isOwner } = useOwnerAuth();
   const { employee } = useEmployeeAuth();
-  const { setPendingTableAssignment } = useWorkflowStore();
-  const [, navigate] = useLocation();
 
-  const [search, setSearch] = useState("");
+  const isDoorman = !isOwner && employee?.role === "Doorman";
+
+  const [search, setSearch]     = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("Incoming");
-  const [viewRes, setViewRes] = useState<Reservation | null>(null);
-  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [filterFloor, setFilterFloor] = useState<string>("all");
+  const [filterTable, setFilterTable] = useState<string>("");
+  const [viewRes, setViewRes]   = useState<Reservation | null>(null);
 
-  const isWaiter = employee?.role === "Waiter";
-  // Owner and Waiter can assign tables; Doorman cannot
-  const canAssignTable = isOwner || isWaiter;
+  // Build a map of reservationId → floor table for quick lookup
+  const tableByReservation = useMemo(() => {
+    const m = new Map<string, typeof floorTables[0]>();
+    floorTables.forEach(t => { if (t.reservationId) m.set(t.reservationId, t); });
+    return m;
+  }, [floorTables]);
 
   const counts = useMemo(() => {
     const c: Record<Tab, number> = {
-      Incoming:  reservations.filter(isIncoming).length,
-      Assigned:  reservations.filter((r) => r.status === "Checked In").length,
-      Seated:    reservations.filter((r) => r.status === "Seated").length,
-      Completed: reservations.filter((r) => r.status === "Completed").length,
-      Cancelled: reservations.filter((r) => r.status === "Cancelled").length,
-      All:       reservations.length,
+      "Incoming":          reservations.filter(isIncoming).length,
+      "Waiting For Guests": reservations.filter(r => r.status === "Checked In").length,
+      "Seated":            reservations.filter(r => r.status === "Seated").length,
+      "Completed":         reservations.filter(r => r.status === "Completed").length,
+      "Cancelled":         reservations.filter(r => r.status === "Cancelled").length,
+      "All":               reservations.length,
     };
     return c;
   }, [reservations]);
 
   const filtered = useMemo(() => {
-    return reservations.filter((r) => {
+    const q = search.toLowerCase();
+    return reservations.filter(r => {
       if (!matchesTab(r, activeTab)) return false;
-      const q = search.toLowerCase();
-      return !q ||
-        r.customer.name.toLowerCase().includes(q) ||
-        r.customer.phone.includes(q) ||
-        r.confirmationNumber.toLowerCase().includes(q);
+      if (q && !r.customer.name.toLowerCase().includes(q) &&
+          !r.customer.phone.includes(q) &&
+          !r.confirmationNumber.toLowerCase().includes(q)) return false;
+      // Floor filter
+      if (filterFloor !== "all") {
+        const ft = tableByReservation.get(r.id);
+        const floor = ft?.floor ?? r.assignedFloor;
+        if (String(floor) !== filterFloor) return false;
+      }
+      // Table filter
+      if (filterTable.trim()) {
+        const ft = tableByReservation.get(r.id);
+        const tn = ft?.number ?? r.assignedTableNumber ?? "";
+        if (!tn.toLowerCase().includes(filterTable.toLowerCase())) return false;
+      }
+      return true;
     });
-  }, [reservations, activeTab, search]);
-
-  const handleChooseTable = (res: Reservation) => {
-    setPendingTableAssignment({ reservation: res, isMove: false });
-    // Navigate to floor plan (works from both /owner and /employee paths)
-    const base = isOwner ? "/owner" : "/employee";
-    navigate(`${base}/floor-plan`);
-  };
-
-  const handleCancel = (id: string) => {
-    updateStatus(id, "Cancelled");
-    setConfirmCancelId(null);
-  };
+  }, [reservations, activeTab, search, filterFloor, filterTable, tableByReservation]);
 
   return (
-    <div className="h-[calc(100vh-80px)] md:h-[calc(100vh-40px)] flex flex-col md:flex-row gap-4 overflow-hidden">
-      {/* ── LEFT: Queue Panel ── */}
-      <div className="flex flex-col flex-1 md:max-w-[520px] w-full overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4 shrink-0">
-          <div>
-            <h1 className="font-serif text-2xl text-white">Reservation Queue</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {counts.Incoming} incoming · {counts.Assigned} assigned · {counts.Seated} seated
-            </p>
-          </div>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-2xl text-white">Reservation Queue</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {counts.Incoming} incoming · {counts["Waiting For Guests"]} waiting · {counts.Seated} seated
+          </p>
+        </div>
+        {/* Only Doorman and Owner can create reservations */}
+        {!isDoorman || isOwner ? (
           <Link href="../new-reservation">
-            <Button size="sm" className="gap-1.5 text-xs">
+            <Button size="sm" className="gap-1.5 text-xs shrink-0">
               <CalendarPlus className="w-3.5 h-3.5" /> New
             </Button>
           </Link>
-        </div>
+        ) : isDoorman ? (
+          <Link href="/employee/new-reservation">
+            <Button size="sm" className="gap-1.5 text-xs shrink-0">
+              <CalendarPlus className="w-3.5 h-3.5" /> New
+            </Button>
+          </Link>
+        ) : null}
+      </div>
 
-        {/* Search */}
-        <div className="relative mb-3 shrink-0">
+      {/* Search + Filters */}
+      <Card className="border-white/5 p-4 space-y-3">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by name, phone, or confirmation #..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1.5 flex-wrap mb-3 shrink-0">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                activeTab === tab
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:text-white hover:border-white/20"
-              }`}
-            >
-              {tab}
-              <span className="ml-1.5 opacity-60">{counts[tab]}</span>
-            </button>
-          ))}
+        <div className="flex gap-2 flex-wrap">
+          <select
+            value={filterFloor}
+            onChange={e => setFilterFloor(e.target.value)}
+            className="h-8 text-xs rounded-md border border-border bg-background px-2 text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          >
+            <option value="all">All Floors</option>
+            <option value="1">Floor 1</option>
+            <option value="2">Floor 2</option>
+          </select>
+          <Input
+            placeholder="Filter by table #..."
+            value={filterTable}
+            onChange={e => setFilterTable(e.target.value)}
+            className="h-8 text-xs w-36"
+          />
         </div>
+      </Card>
 
-        {/* Cards List */}
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-          <AnimatePresence mode="popLayout">
-            {filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-center">
-                <p className="text-muted-foreground text-sm">No reservations found.</p>
-              </div>
-            ) : (
-              filtered.map((res) => (
+      {/* Tabs */}
+      <div className="flex gap-1.5 flex-wrap">
+        {TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              activeTab === tab
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border text-muted-foreground hover:text-white hover:border-white/20"
+            }`}
+          >
+            {tab}
+            <span className="ml-1.5 opacity-60">{counts[tab]}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Cards */}
+      <div className="space-y-2">
+        <AnimatePresence mode="popLayout">
+          {filtered.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground text-sm">
+              {search || filterTable || filterFloor !== "all"
+                ? "No reservations match your filters."
+                : `No ${activeTab.toLowerCase()} reservations.`}
+            </div>
+          ) : (
+            filtered.map(res => {
+              const ft = tableByReservation.get(res.id);
+              return (
                 <ReservationCard
                   key={res.id}
                   res={res}
-                  canAssignTable={canAssignTable}
-                  onChooseTable={() => handleChooseTable(res)}
-                  onCancel={() => handleCancel(res.id)}
-                  onView={() => setViewRes(res)}
-                  confirmCancelId={confirmCancelId}
-                  setConfirmCancelId={setConfirmCancelId}
+                  assignedTableNumber={ft?.number}
+                  assignedFloor={ft?.floor}
+                  onClick={() => setViewRes(res)}
                 />
-              ))
-            )}
-          </AnimatePresence>
-        </div>
+              );
+            })
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* ── RIGHT: Floor Plan link ── */}
-      <div className="hidden md:flex flex-1 flex-col">
-        <Card className="flex-1 border-white/5 border-dashed flex flex-col items-center justify-center text-center p-12">
-          <div className="w-16 h-16 rounded-2xl bg-white/3 border border-white/10 flex items-center justify-center mb-6">
-            <Map className="w-8 h-8 text-white/20" />
-          </div>
-          <h3 className="font-serif text-xl text-white/30 mb-2">Floor Plan</h3>
-          <p className="text-sm text-muted-foreground/50 max-w-xs mb-6">
-            Click "Choose Table" on a reservation to open the floor plan in selection mode.
-          </p>
-          <Button variant="outline" size="sm" className="gap-2 opacity-60 hover:opacity-100" asChild>
-            <Link href={isOwner ? "/owner/floor-plan" : "/employee/floor-plan"}>
-              <Map className="w-3.5 h-3.5" /> Open Floor Plan
-            </Link>
-          </Button>
-        </Card>
-      </div>
-
-      {/* View Modal */}
+      {/* Details modal */}
       <AnimatePresence>
-        {viewRes && <DetailModal res={viewRes} onClose={() => setViewRes(null)} />}
+        {viewRes && (
+          <ReservationDetailsModal
+            reservation={viewRes}
+            onClose={() => setViewRes(null)}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

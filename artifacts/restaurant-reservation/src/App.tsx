@@ -33,7 +33,7 @@ import WaiterDashboard from "@/pages/waiter/WaiterDashboard";
 
 const queryClient = new QueryClient();
 
-// ─── Route Guards ─────────────────────────────────────────────────────────────
+// ─── Route Guards ──────────────────────────────────────────────────────────────
 
 function OwnerRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useOwnerAuth();
@@ -47,16 +47,31 @@ function EmployeeRoute({ children }: { children: React.ReactNode }) {
   return <EmployeeLayout>{children}</EmployeeLayout>;
 }
 
+/** Route only accessible to Waiter role. Doorman is redirected to dashboard. */
+function WaiterOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, employee } = useEmployeeAuth();
+  if (!isAuthenticated) return <Redirect to="/employee-login" />;
+  if (employee?.role === "Doorman") return <Redirect to="/employee" />;
+  return <EmployeeLayout>{children}</EmployeeLayout>;
+}
+
+/** Route only accessible to Doorman role. Waiter is redirected to dashboard. */
+function DoormanOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, employee } = useEmployeeAuth();
+  if (!isAuthenticated) return <Redirect to="/employee-login" />;
+  if (employee?.role === "Waiter") return <Redirect to="/employee" />;
+  return <EmployeeLayout>{children}</EmployeeLayout>;
+}
+
 // ─── Role-aware employee dashboard ───────────────────────────────────────────
 
 function EmployeeDashboard() {
   const { employee } = useEmployeeAuth();
   if (employee?.role === "Waiter") return <WaiterDashboard />;
-  // Owner (staff-level) and Doorman both see the Doorman dashboard
   return <DoormanDashboard />;
 }
 
-// ─── 404 ─────────────────────────────────────────────────────────────────────
+// ─── 404 ──────────────────────────────────────────────────────────────────────
 
 function NotFound() {
   return (
@@ -69,7 +84,7 @@ function NotFound() {
   );
 }
 
-// ─── Router ──────────────────────────────────────────────────────────────────
+// ─── Router ───────────────────────────────────────────────────────────────────
 
 function Router() {
   return (
@@ -81,28 +96,32 @@ function Router() {
       <Route path="/owner-login"    component={OwnerLogin} />
       <Route path="/employee-login" component={EmployeeLogin} />
 
-      {/* ── Owner Dashboard ── */}
+      {/* ── Owner Dashboard (all routes) ── */}
       <Route path="/owner"                component={() => <OwnerRoute><DashboardOverview /></OwnerRoute>} />
       <Route path="/owner/reservations"   component={() => <OwnerRoute><ReservationsPage /></OwnerRoute>} />
       <Route path="/owner/floor-plan"     component={() => <OwnerRoute><FloorPlan /></OwnerRoute>} />
       <Route path="/owner/employees"      component={() => <OwnerRoute><Employees /></OwnerRoute>} />
       <Route path="/owner/settings"       component={() => <OwnerRoute><Settings /></OwnerRoute>} />
 
-      {/* ── Employee Dashboard (Doorman / Waiter / Owner-staff) ── */}
-      <Route path="/employee"                 component={() => <EmployeeRoute><EmployeeDashboard /></EmployeeRoute>} />
-      <Route path="/employee/new-reservation" component={() => <EmployeeRoute><NewReservation /></EmployeeRoute>} />
-      <Route path="/employee/reservations"    component={() => <EmployeeRoute><ReservationsPage /></EmployeeRoute>} />
-      <Route path="/employee/floor-plan"      component={() => <EmployeeRoute><FloorPlan /></EmployeeRoute>} />
+      {/* ── Employee: shared routes ── */}
+      <Route path="/employee"             component={() => <EmployeeRoute><EmployeeDashboard /></EmployeeRoute>} />
+      <Route path="/employee/reservations" component={() => <EmployeeRoute><ReservationsPage /></EmployeeRoute>} />
+
+      {/* Doorman only: can create reservations; Waiter is redirected */}
+      <Route path="/employee/new-reservation" component={() => <DoormanOnlyRoute><NewReservation /></DoormanOnlyRoute>} />
+
+      {/* Waiter only: can access floor plan; Doorman is redirected */}
+      <Route path="/employee/floor-plan"  component={() => <WaiterOnlyRoute><FloorPlan /></WaiterOnlyRoute>} />
 
       {/* Legacy redirects */}
-      <Route path="/dashboard"  component={() => <Redirect to="/owner" />} />
+      <Route path="/dashboard" component={() => <Redirect to="/owner" />} />
 
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// ─── App ─────────────────────────────────────────────────────────────────────
+// ─── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
   return (

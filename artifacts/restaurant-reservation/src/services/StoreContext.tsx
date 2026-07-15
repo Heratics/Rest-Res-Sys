@@ -17,20 +17,16 @@ import {
 export interface PendingTableAssignment {
   reservation: Reservation;
   isMove: boolean;
-  /** Only set when isMove=true: the table being vacated. */
   oldTableId?: string;
-  /** Status of the reservation at the time the move was initiated. */
   prevReservationStatus?: "Checked In" | "Seated";
 }
 
-// ─── Session keys ───────────────────────────────────────────────────────────
+// ─── Session keys ─────────────────────────────────────────────────────────────
 const OWNER_SESSION_KEY = "BOOMCLUB_owner_session";
 const EMPLOYEE_SESSION_KEY = "BOOMCLUB_employee_session";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-export interface OwnerUser {
-  username: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
+export interface OwnerUser { username: string }
 
 export interface EmployeeUser {
   id: string;
@@ -49,7 +45,8 @@ export interface OwnerAuthState {
 export interface EmployeeAuthState {
   employee: EmployeeUser | null;
   isAuthenticated: boolean;
-  login: (username: string, pass: string) => void;
+  /** Returns true on success, false if not found or inactive. */
+  login: (username: string, pass: string) => { success: boolean; error?: string };
   logout: () => void;
 }
 
@@ -57,6 +54,7 @@ export interface ReservationState {
   reservations: Reservation[];
   getReservation: (id: string) => Reservation | undefined;
   updateStatus: (id: string, status: Reservation["status"]) => void;
+  updateReservation: (id: string, updates: Partial<Reservation>) => void;
   addReservation: (data: Omit<Reservation, "id" | "confirmationNumber" | "createdAt">) => Reservation;
 }
 
@@ -65,6 +63,10 @@ export interface EmployeeStoreState {
   addEmployee: (emp: Omit<Employee, "id" | "dateAdded">) => void;
   updateEmployee: (id: string, updates: Partial<Employee>) => void;
   removeEmployee: (id: string) => void;
+  activateEmployee: (id: string) => void;
+  deactivateEmployee: (id: string) => void;
+  deleteEmployee: (id: string) => void;
+  resetEmployeePassword: (id: string, newPassword: string) => void;
 }
 
 export type Settings = typeof restaurantSettings;
@@ -91,7 +93,7 @@ export interface WorkflowState {
   clearLastNewReservation: () => void;
 }
 
-// ─── Context ─────────────────────────────────────────────────────────────────
+// ─── Context ──────────────────────────────────────────────────────────────────
 export const StoreContext = createContext<{
   ownerAuth: OwnerAuthState;
   employeeAuth: EmployeeAuthState;
@@ -102,30 +104,23 @@ export const StoreContext = createContext<{
   workflowState: WorkflowState;
 } | null>(null);
 
-// ─── Session helpers ─────────────────────────────────────────────────────────
+// ─── Session helpers ──────────────────────────────────────────────────────────
 function loadSession<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function saveSession<T>(key: string, value: T | null) {
   try {
-    if (value) {
-      localStorage.setItem(key, JSON.stringify(value));
-    } else {
-      localStorage.removeItem(key);
-    }
-  } catch {
-    // ignore
-  }
+    if (value) localStorage.setItem(key, JSON.stringify(value));
+    else localStorage.removeItem(key);
+  } catch { /* ignore */ }
 }
 
-// ─── Provider ────────────────────────────────────────────────────────────────
+// ─── Provider ─────────────────────────────────────────────────────────────────
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [owner, setOwner] = useState<OwnerUser | null>(() => loadSession<OwnerUser>(OWNER_SESSION_KEY));
   const [employeeUser, setEmployeeUser] = useState<EmployeeUser | null>(() =>
@@ -140,7 +135,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [pendingTableAssignment, setPendingTableAssignment] = useState<PendingTableAssignment | null>(null);
   const [lastNewReservation, setLastNewReservation] = useState<Reservation | null>(null);
 
-  // Sync sessions to localStorage
   useEffect(() => { saveSession(OWNER_SESSION_KEY, owner); }, [owner]);
   useEffect(() => { saveSession(EMPLOYEE_SESSION_KEY, employeeUser); }, [employeeUser]);
 
@@ -153,19 +147,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Employee auth ──
+  // Login ONLY succeeds for known Active employees.
+  // No generic fallback — inactive or unknown users are rejected.
   const employeeAuth: EmployeeAuthState = {
     employee: employeeUser,
     isAuthenticated: !!employeeUser,
     login: (username, _pass) => {
-      const found = employees.find(
-        (e) => e.username === username && e.status === "Active"
-      );
-      if (found) {
-        setEmployeeUser({ id: found.id, name: found.name, username: found.username, role: found.role });
-      } else {
-        // Generic fallback — any credentials work, defaults to Doorman
-        setEmployeeUser({ id: "e_mock", name: username, username, role: "Doorman" });
+      const found = employees.find((e) => e.username === username);
+      if (!found) {
+        return { success: false, error: "No employee found with that username." };
       }
+      if (found.status === "Inactive") {
+        return { success: false, error: "This account is inactive. Contact your manager." };
+      }
+      setEmployeeUser({ id: found.id, name: found.name, username: found.username, role: found.role });
+      return { success: true };
     },
     logout: () => setEmployeeUser(null),
   };
@@ -175,7 +171,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     reservations,
     getReservation: (id) => reservations.find((r) => r.id === id),
     updateStatus: (id, status) =>
-      setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
+      setReservations((prev) => prev.map((r) => r.id === id ? { ...r, status } : r)),
+    updateReservation: (id, updates) =>
+      setReservations((prev) => prev.map((r) => r.id === id ? { ...r, ...updates } : r)),
     addReservation: (data) => {
       const newRes = createReservation(data);
       setReservations((prev) => [newRes, ...prev]);
@@ -196,8 +194,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setEmployees((prev) => [newEmp, ...prev]);
     },
     updateEmployee: (id, updates) =>
-      setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e))),
-    removeEmployee: (id) => setEmployees((prev) => prev.filter((e) => e.id !== id)),
+      setEmployees((prev) => prev.map((e) => e.id === id ? { ...e, ...updates } : e)),
+    removeEmployee: (id) =>
+      setEmployees((prev) => prev.filter((e) => e.id !== id)),
+    activateEmployee: (id) =>
+      setEmployees((prev) => prev.map((e) => e.id === id ? { ...e, status: "Active" } : e)),
+    deactivateEmployee: (id) =>
+      setEmployees((prev) => prev.map((e) => e.id === id ? { ...e, status: "Inactive" } : e)),
+    deleteEmployee: (id) =>
+      setEmployees((prev) => prev.filter((e) => e.id !== id)),
+    resetEmployeePassword: (id, newPassword) =>
+      setEmployees((prev) => prev.map((e) => e.id === id ? { ...e, password: newPassword } : e)),
   };
 
   // ── Restaurant ──
@@ -206,14 +213,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     tables,
     updateSettings: (updates) => setSettings((prev) => ({ ...prev, ...updates })),
     updateTable: (id, status) =>
-      setTables((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t))),
+      setTables((prev) => prev.map((t) => t.id === id ? { ...t, status } : t)),
   };
 
   // ── Floor Plan ──
   const floorPlanStore: FloorPlanState = {
     floorTables,
     updateFloorTable: (id, updates) =>
-      setFloorTables((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t))),
+      setFloorTables((prev) => prev.map((t) => t.id === id ? { ...t, ...updates } : t)),
     addFloorTable: (table) =>
       setFloorTables((prev) => [...prev, { ...table, id: `ft${table.floor}_${Date.now()}` }]),
     removeFloorTable: (id) =>
@@ -238,17 +245,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Hooks ───────────────────────────────────────────────────────────────────
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 function useStore() {
   const ctx = useContext(StoreContext);
   if (!ctx) throw new Error("Missing StoreProvider");
   return ctx;
 }
 
-export const useOwnerAuth = () => useStore().ownerAuth;
-export const useEmployeeAuth = () => useStore().employeeAuth;
+export const useOwnerAuth       = () => useStore().ownerAuth;
+export const useEmployeeAuth    = () => useStore().employeeAuth;
 export const useReservationStore = () => useStore().reservationStore;
-export const useEmployeeStore = () => useStore().employeeStore;
+export const useEmployeeStore   = () => useStore().employeeStore;
 export const useRestaurantStore = () => useStore().restaurantStore;
-export const useFloorPlanStore = () => useStore().floorPlanStore;
-export const useWorkflowStore = () => useStore().workflowState;
+export const useFloorPlanStore  = () => useStore().floorPlanStore;
+export const useWorkflowStore   = () => useStore().workflowState;

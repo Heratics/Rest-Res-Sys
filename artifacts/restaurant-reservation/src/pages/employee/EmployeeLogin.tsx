@@ -23,9 +23,14 @@ export default function EmployeeLogin() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    login(credentials.username, credentials.password);
-    setLocation("/employee");
+    await new Promise(r => setTimeout(r, 600));
+    const result = login(credentials.username, credentials.password);
+    setLoading(false);
+    if (result.success) {
+      setLocation("/employee");
+    } else {
+      setError(result.error ?? "Login failed. Please check your credentials.");
+    }
   };
 
   return (
@@ -56,20 +61,21 @@ export default function EmployeeLogin() {
 
             <form onSubmit={handleLogin} className="space-y-5">
               {error && (
-                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md border border-destructive/20 text-center">
+                <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                  className="bg-destructive/10 text-destructive text-sm p-3 rounded-md border border-destructive/20 text-center">
                   {error}
-                </div>
+                </motion.div>
               )}
               <div className="space-y-2">
                 <Label htmlFor="emp-username">Employee ID or Username</Label>
                 <Input id="emp-username" value={credentials.username}
-                  onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                  onChange={e => setCredentials({ ...credentials, username: e.target.value })}
                   placeholder="e.g. amara.d" autoComplete="username" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emp-password">Password</Label>
                 <Input id="emp-password" type="password" value={credentials.password}
-                  onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                  onChange={e => setCredentials({ ...credentials, password: e.target.value })}
                   placeholder="••••••••" autoComplete="current-password" />
               </div>
               <Button type="submit" className="w-full" size="lg" disabled={loading}>

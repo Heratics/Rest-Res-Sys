@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, CalendarPlus, ClipboardList, Map,
-  LogOut, Menu, X, UtensilsCrossed, Users, MapPin, Bell,
+  LogOut, Menu, X, UtensilsCrossed, Bell, Users, MapPin,
 } from "lucide-react";
 import { useEmployeeAuth } from "@/services/authStore";
 import { useWorkflowStore } from "@/services/workflowStore";
@@ -11,20 +11,21 @@ import { useReservationStore } from "@/services/reservationStore";
 
 type NavItem = { label: string; path: string; icon: React.ElementType };
 
+// Doorman: No Floor Plan access
 const DOORMAN_NAV: NavItem[] = [
   { label: "Dashboard",       path: "/employee",                 icon: LayoutDashboard },
   { label: "New Reservation", path: "/employee/new-reservation", icon: CalendarPlus },
   { label: "Reservations",    path: "/employee/reservations",    icon: ClipboardList },
-  { label: "Floor Plan",      path: "/employee/floor-plan",      icon: Map },
 ];
 
+// Waiter: No New Reservation, but has Floor Plan
 const WAITER_NAV: NavItem[] = [
   { label: "Dashboard",    path: "/employee",              icon: LayoutDashboard },
   { label: "Reservations", path: "/employee/reservations", icon: ClipboardList },
   { label: "Floor Plan",   path: "/employee/floor-plan",   icon: Map },
 ];
 
-// ─── New Reservation Toast ─────────────────────────────────────────────────
+// ─── New Reservation Toast ────────────────────────────────────────────────────
 
 function NewReservationToast({
   reservation,
@@ -44,9 +45,7 @@ function NewReservationToast({
       className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm px-4"
     >
       <div className="bg-[#1a1a1a] border border-primary/40 rounded-2xl shadow-2xl shadow-primary/10 overflow-hidden">
-        {/* Gold accent top border */}
         <div className="h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />
-
         <div className="p-4">
           <div className="flex items-start gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
@@ -61,18 +60,13 @@ function NewReservationToast({
               </p>
             </div>
           </div>
-
           <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={onChooseTable}
-              className="flex items-center justify-center gap-1.5 h-9 rounded-lg bg-primary hover:bg-primary/90 text-black text-sm font-semibold transition-colors"
-            >
+            <button onClick={onChooseTable}
+              className="flex items-center justify-center gap-1.5 h-9 rounded-lg bg-primary hover:bg-primary/90 text-black text-sm font-semibold transition-colors">
               <MapPin className="w-3.5 h-3.5" /> CHOOSE TABLE
             </button>
-            <button
-              onClick={onDismiss}
-              className="h-9 rounded-lg border border-white/10 text-muted-foreground hover:text-white hover:border-white/20 text-sm transition-colors"
-            >
+            <button onClick={onDismiss}
+              className="h-9 rounded-lg border border-white/10 text-muted-foreground hover:text-white hover:border-white/20 text-sm transition-colors">
               Dismiss
             </button>
           </div>
@@ -82,7 +76,7 @@ function NewReservationToast({
   );
 }
 
-// ─── Layout ────────────────────────────────────────────────────────────────
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 export function EmployeeLayout({ children }: { children: ReactNode }) {
   const [location, navigate] = useLocation();
@@ -94,19 +88,17 @@ export function EmployeeLayout({ children }: { children: ReactNode }) {
 
   const role = employee?.role ?? "Doorman";
   const isWaiter = role === "Waiter";
-  const nav = role === "Waiter" ? WAITER_NAV : DOORMAN_NAV;
+  const nav = isWaiter ? WAITER_NAV : DOORMAN_NAV;
 
-  // Toast visibility — only for waiters
+  // Toast — only for Waiters
   const [toastReservation, setToastReservation] = useState<typeof lastNewReservation>(null);
   const shownIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!isWaiter) return;
-    if (!lastNewReservation) return;
+    if (!isWaiter || !lastNewReservation) return;
     if (shownIds.current.has(lastNewReservation.id)) return;
     shownIds.current.add(lastNewReservation.id);
     setToastReservation(lastNewReservation);
-    // Auto-dismiss after 12 seconds
     const t = setTimeout(() => {
       setToastReservation(null);
       clearLastNewReservation();
@@ -116,7 +108,7 @@ export function EmployeeLayout({ children }: { children: ReactNode }) {
 
   const handleToastChooseTable = () => {
     if (!toastReservation) return;
-    const res = reservations.find((r) => r.id === toastReservation.id);
+    const res = reservations.find(r => r.id === toastReservation.id);
     if (res) {
       setPendingTableAssignment({ reservation: res, isMove: false });
       navigate("/employee/floor-plan");
@@ -125,15 +117,8 @@ export function EmployeeLayout({ children }: { children: ReactNode }) {
     clearLastNewReservation();
   };
 
-  const handleToastDismiss = () => {
-    setToastReservation(null);
-    clearLastNewReservation();
-  };
-
   const ROLE_LABEL: Record<string, string> = {
-    Owner: "Owner · Staff",
-    Doorman: "Doorman",
-    Waiter: "Waiter",
+    Owner: "Owner · Staff", Doorman: "Doorman", Waiter: "Waiter",
   };
 
   const SidebarContent = () => (
@@ -161,8 +146,7 @@ export function EmployeeLayout({ children }: { children: ReactNode }) {
                   ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
                   : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
               }`}>
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
+                <Icon className="w-4 h-4 shrink-0" />{label}
               </div>
             </Link>
           );
@@ -189,13 +173,12 @@ export function EmployeeLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background flex text-foreground">
       <div className="fixed inset-0 bg-noise z-0" />
 
-      {/* New reservation toast — global, above everything */}
       <AnimatePresence>
         {toastReservation && (
           <NewReservationToast
             reservation={toastReservation}
             onChooseTable={handleToastChooseTable}
-            onDismiss={handleToastDismiss}
+            onDismiss={() => { setToastReservation(null); clearLastNewReservation(); }}
           />
         )}
       </AnimatePresence>

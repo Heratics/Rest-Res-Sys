@@ -16,6 +16,16 @@ export interface Reservation {
   specialRequests?: string;
   status: ReservationStatus;
   createdAt: string;
+  // Operational timestamps
+  assignedAt?: string;
+  seatedAt?: string;
+  completedAt?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  // Assigned table info (denormalized for history — preserved after table is released)
+  assignedTableId?: string;
+  assignedTableNumber?: string;
+  assignedFloor?: number;
 }
 
 export interface Table {
@@ -34,15 +44,18 @@ export interface Employee {
   role: EmployeeRole;
   status: EmployeeStatus;
   dateAdded: string;
+  password?: string; // mock only — backend will handle auth properly
 }
 
 export const mockCustomers: Customer[] = [
-  { id: "c1", name: "Eleanor Vance", phone: "+962 6 555 0101" },
+  { id: "c1", name: "Eleanor Vance",   phone: "+962 6 555 0101" },
   { id: "c2", name: "Marcus Sterling", phone: "+962 6 555 0102" },
-  { id: "c3", name: "Sophia Laurent", phone: "+962 6 555 0103" },
-  { id: "c4", name: "James Holden", phone: "+962 6 555 0104" },
-  { id: "c5", name: "Isabella Rossi", phone: "+962 6 555 0105" },
+  { id: "c3", name: "Sophia Laurent",  phone: "+962 6 555 0103" },
+  { id: "c4", name: "James Holden",    phone: "+962 6 555 0104" },
+  { id: "c5", name: "Isabella Rossi",  phone: "+962 6 555 0105" },
 ];
+
+const _n = Date.now();
 
 export let mockReservations: Reservation[] = [
   {
@@ -51,16 +64,25 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[0],
     guests: 2,
     specialRequests: "Window seat preferred. Anniversary dinner.",
-    status: "Checked In",          // table assigned (ft1_05 Waiting)
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    status: "Checked In",
+    createdAt: new Date(_n - 3600000 * 2).toISOString(),
+    assignedAt: new Date(_n - 1800000).toISOString(),
+    assignedTableId: "ft1_05",
+    assignedTableNumber: "5",
+    assignedFloor: 1,
   },
   {
     id: "r2",
     confirmationNumber: "#AUR-0472",
     customer: mockCustomers[1],
     guests: 4,
-    status: "Seated",               // guests seated (ft1_03 Occupied)
-    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    status: "Seated",
+    createdAt: new Date(_n - 3600000 * 3).toISOString(),
+    assignedAt: new Date(_n - 5400000).toISOString(),
+    seatedAt: new Date(_n - 5400000).toISOString(),
+    assignedTableId: "ft1_03",
+    assignedTableNumber: "3",
+    assignedFloor: 1,
   },
   {
     id: "r3",
@@ -68,8 +90,8 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[2],
     guests: 2,
     specialRequests: "Nut allergy — please inform kitchen.",
-    status: "Pending",              // incoming, no table yet
-    createdAt: new Date(Date.now() - 3600000 * 0.5).toISOString(),
+    status: "Pending",
+    createdAt: new Date(_n - 3600000 * 0.5).toISOString(),
   },
   {
     id: "r4",
@@ -77,8 +99,8 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[3],
     guests: 6,
     specialRequests: "Vegan options needed for 2 guests.",
-    status: "Pending",              // incoming, no table yet
-    createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+    status: "Pending",
+    createdAt: new Date(_n - 3600000 * 1).toISOString(),
   },
   {
     id: "r5",
@@ -86,15 +108,21 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[4],
     guests: 2,
     status: "Cancelled",
-    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    createdAt: new Date(_n - 3600000 * 5).toISOString(),
+    cancelledAt: new Date(_n - 3600000 * 4.5).toISOString(),
+    cancelledBy: "Amara Diallo",
   },
   {
     id: "r6",
     confirmationNumber: "#AUR-0476",
     customer: mockCustomers[0],
     guests: 2,
-    status: "Checked In",           // table assigned (ft1_50 Waiting)
-    createdAt: new Date(Date.now() - 600000).toISOString(),
+    status: "Checked In",
+    createdAt: new Date(_n - 600000).toISOString(),
+    assignedAt: new Date(_n - 900000).toISOString(),
+    assignedTableId: "ft1_50",
+    assignedTableNumber: "50",
+    assignedFloor: 1,
   },
   {
     id: "r7",
@@ -102,21 +130,26 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[1],
     guests: 8,
     specialRequests: "Birthday cake prepared in advance.",
-    status: "Seated",               // guests seated (ft1_25 Occupied)
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    status: "Seated",
+    createdAt: new Date(_n - 3600000 * 4).toISOString(),
+    assignedAt: new Date(_n - 7200000).toISOString(),
+    seatedAt: new Date(_n - 7200000).toISOString(),
+    assignedTableId: "ft1_25",
+    assignedTableNumber: "25",
+    assignedFloor: 1,
   },
 ];
 
 export const mockTables: Table[] = [
-  { id: "t1", number: "11", capacity: 2, status: "Available" },
-  { id: "t2", number: "12", capacity: 2, status: "Occupied", reservationId: "r2" },
-  { id: "t3", number: "13", capacity: 2, status: "Available" },
-  { id: "t4", number: "14", capacity: 4, status: "Reserved", reservationId: "r1" },
-  { id: "t5", number: "21", capacity: 4, status: "Available" },
-  { id: "t6", number: "22", capacity: 4, status: "Available" },
-  { id: "t7", number: "23", capacity: 6, status: "Reserved", reservationId: "r4" },
-  { id: "t8", number: "24", capacity: 6, status: "Available" },
-  { id: "t9", number: "31", capacity: 8, status: "Available" },
+  { id: "t1",  number: "11", capacity: 2, status: "Available" },
+  { id: "t2",  number: "12", capacity: 2, status: "Occupied",  reservationId: "r2" },
+  { id: "t3",  number: "13", capacity: 2, status: "Available" },
+  { id: "t4",  number: "14", capacity: 4, status: "Reserved",  reservationId: "r1" },
+  { id: "t5",  number: "21", capacity: 4, status: "Available" },
+  { id: "t6",  number: "22", capacity: 4, status: "Available" },
+  { id: "t7",  number: "23", capacity: 6, status: "Reserved",  reservationId: "r4" },
+  { id: "t8",  number: "24", capacity: 6, status: "Available" },
+  { id: "t9",  number: "31", capacity: 8, status: "Available" },
   { id: "t10", number: "32", capacity: 2, status: "Available" },
 ];
 
@@ -128,65 +161,25 @@ export const restaurantSettings = {
 };
 
 export const mockEmployees: Employee[] = [
-  {
-    id: "e1",
-    name: "Luca Moreau",
-    username: "luca.m",
-    phone: "+962 6 555 0201",
-    role: "Owner",
-    status: "Active",
-    dateAdded: "2024-03-15",
-  },
-  {
-    id: "e2",
-    name: "Amara Diallo",
-    username: "amara.d",
-    phone: "+962 6 555 0202",
-    role: "Doorman",
-    status: "Active",
-    dateAdded: "2024-05-02",
-  },
-  {
-    id: "e3",
-    name: "Theo Nakamura",
-    username: "theo.n",
-    phone: "+962 6 555 0203",
-    role: "Doorman",
-    status: "Active",
-    dateAdded: "2024-07-19",
-  },
-  {
-    id: "e4",
-    name: "Celine Dupont",
-    username: "celine.d",
-    phone: "+962 6 555 0204",
-    role: "Waiter",
-    status: "Active",
-    dateAdded: "2024-09-08",
-  },
-  {
-    id: "e5",
-    name: "Rafael Ortega",
-    username: "rafael.o",
-    phone: "+962 6 555 0205",
-    role: "Waiter",
-    status: "Inactive",
-    dateAdded: "2024-11-22",
-  },
-  {
-    id: "e6",
-    name: "Priya Sharma",
-    username: "priya.s",
-    phone: "+962 6 555 0206",
-    role: "Waiter",
-    status: "Active",
-    dateAdded: "2025-01-10",
-  },
+  { id: "e1", name: "Luca Moreau",    username: "luca.m",   phone: "+962 6 555 0201", role: "Owner",   status: "Active",   dateAdded: "2024-03-15", password: "admin123" },
+  { id: "e2", name: "Amara Diallo",   username: "amara.d",  phone: "+962 6 555 0202", role: "Doorman", status: "Active",   dateAdded: "2024-05-02", password: "staff123" },
+  { id: "e3", name: "Theo Nakamura",  username: "theo.n",   phone: "+962 6 555 0203", role: "Doorman", status: "Active",   dateAdded: "2024-07-19", password: "staff123" },
+  { id: "e4", name: "Celine Dupont",  username: "celine.d", phone: "+962 6 555 0204", role: "Waiter",  status: "Active",   dateAdded: "2024-09-08", password: "staff123" },
+  { id: "e5", name: "Rafael Ortega",  username: "rafael.o", phone: "+962 6 555 0205", role: "Waiter",  status: "Inactive", dateAdded: "2024-11-22", password: "staff123" },
+  { id: "e6", name: "Priya Sharma",   username: "priya.s",  phone: "+962 6 555 0206", role: "Waiter",  status: "Active",   dateAdded: "2025-01-10", password: "staff123" },
 ];
 
-// ─── Floor Plan Types ────────────────────────────────────────────────────────
+// ─── Floor Plan Types ─────────────────────────────────────────────────────────
 export type FloorTableStatus = "Available" | "Waiting" | "Occupied" | "Special" | "OutOfService";
 export type TableShape = "round" | "square" | "banquet";
+
+export interface SpecialGuest {
+  name: string;
+  phone?: string;
+  reason: string;
+  reservedBy: string;
+  reservedAt: string;
+}
 
 export interface FloorTable {
   id: string;
@@ -201,12 +194,11 @@ export interface FloorTable {
   assignedWaiter?: string;
   assignedAt?: string;
   seatedAt?: string;
-  specialGuest?: { name: string; reason: string; reservedBy: string; reservedAt: string };
+  specialGuest?: SpecialGuest;
   outOfService?: { reason: string; disabledBy: string; disabledAt: string };
   notes?: string;
 }
 
-const _n = Date.now();
 export const mockFloorTables: FloorTable[] = [
   // ── Floor 1 · Left Wing – Column A (x=55) ──────────────────────────────
   { id:"ft1_01", number:"1",  floor:1, shape:"round",  capacity:4, status:"Available", x:55, y:65 },
@@ -240,7 +232,7 @@ export const mockFloorTables: FloorTable[] = [
   { id:"ft1_26", number:"26", floor:1, shape:"round",  capacity:4, status:"Available",     x:965, y:225 },
   { id:"ft1_27", number:"27", floor:1, shape:"round",  capacity:2, status:"Available",     x:965, y:305 },
   { id:"ft1_28", number:"28", floor:1, shape:"round",  capacity:4, status:"Available",     x:965, y:385 },
-  { id:"ft1_29", number:"29", floor:1, shape:"round",  capacity:2, status:"OutOfService",  x:965, y:465, outOfService:{ reason:"Chair leg broken – maintenance needed", disabledBy:"Luca Moreau", disabledAt:new Date(_n-86400000).toISOString() } },
+  { id:"ft1_29", number:"29", floor:1, shape:"round",  capacity:2, status:"OutOfService",  x:965, y:465, outOfService:{ reason:"Broken Furniture", disabledBy:"Luca Moreau", disabledAt:new Date(_n-86400000).toISOString() } },
   { id:"ft1_30", number:"30", floor:1, shape:"round",  capacity:4, status:"Available",     x:965, y:545 },
   { id:"ft1_31", number:"31", floor:1, shape:"round",  capacity:2, status:"Available",     x:965, y:625 },
   // ── Floor 1 · Right Wing – Column E (x=1055) ───────────────────────────
@@ -290,7 +282,7 @@ export const mockFloorTables: FloorTable[] = [
   { id:"ft2_09", number:"209", floor:2, shape:"round",  capacity:4, status:"Available", x:496, y:626 },
   { id:"ft2_10", number:"210", floor:2, shape:"round",  capacity:4, status:"Available", x:404, y:626 },
   { id:"ft2_11", number:"211", floor:2, shape:"round",  capacity:4, status:"Available", x:319, y:593 },
-  { id:"ft2_12", number:"212", floor:2, shape:"square", capacity:6, status:"Special",   x:250, y:530, specialGuest:{ name:"Nora Al-Farsi", reason:"Corporate Event", reservedBy:"Luca Moreau", reservedAt:new Date(_n-7200000).toISOString() } },
+  { id:"ft2_12", number:"212", floor:2, shape:"square", capacity:6, status:"Special",   x:250, y:530, specialGuest:{ name:"Nora Al-Farsi", phone:"+962 79 555 0099", reason:"Corporate Event", reservedBy:"Luca Moreau", reservedAt:new Date(_n-7200000).toISOString() } },
   { id:"ft2_13", number:"213", floor:2, shape:"round",  capacity:4, status:"Available", x:210, y:448 },
   { id:"ft2_14", number:"214", floor:2, shape:"round",  capacity:4, status:"Available", x:201, y:357 },
   { id:"ft2_15", number:"215", floor:2, shape:"square", capacity:6, status:"Available", x:226, y:269 },
@@ -298,7 +290,7 @@ export const mockFloorTables: FloorTable[] = [
   { id:"ft2_17", number:"217", floor:2, shape:"round",  capacity:4, status:"Available", x:360, y:147 },
 ];
 
-export const updateReservation = (id: string, updates: Partial<Reservation>) => {
+export const updateReservationData = (id: string, updates: Partial<Reservation>) => {
   mockReservations = mockReservations.map((res) =>
     res.id === id ? { ...res, ...updates } : res
   );

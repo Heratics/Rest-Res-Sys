@@ -1,0 +1,715 @@
+The core reservation workflow and interactive Floor Plan are now working.
+
+Your task is to COMPLETE the remaining restaurant operations, role permissions, employee management, and reservation management.
+
+IMPORTANT:
+
+- Do NOT redesign working pages.
+- Do NOT rebuild the Floor Plan.
+- Do NOT rebuild the reservation assignment workflow.
+- Do NOT replace the existing shared StoreContext/workflow architecture.
+- Extend the existing components and centralized operations.
+- Do NOT implement a real backend yet.
+- Do NOT create fake API endpoints.
+- Do NOT create TODOs or placeholder functionality.
+- Preserve the existing BoomClub dark theme and gold accent #E3BE59.
+- Every visible button must perform its intended frontend action.
+- Keep all operations centralized and ready to be replaced with backend API calls later.
+- Ensure the project builds with zero errors before finishing.
+
+==================================================
+1. ROLE PERMISSIONS — AUDIT AND ENFORCE
+==================================================
+
+There are exactly 3 application roles:
+
+OWNER
+DOORMAN
+WAITER
+
+Audit the ENTIRE frontend and make sure each role only sees and can perform the actions allowed below.
+
+Do not only hide sidebar links. Also hide or disable unauthorized buttons and actions inside pages, cards, modals, and table menus.
+
+OWNER:
+
+Can:
+- View all reservations
+- Create reservations
+- Edit reservations
+- Cancel reservations
+- Assign tables
+- Move reservations between tables
+- Mark guests seated
+- Complete reservations
+- Manage Special Guest tables
+- Mark tables Out Of Service
+- Return tables to service
+- Edit the physical Floor Plan
+- Add/edit/remove employees
+- Access settings
+
+DOORMAN:
+
+Can:
+- Create reservations
+- View Incoming/Waiting reservation queue
+- Search reservations
+- View reservation details
+- Edit customer reservation information before seating
+- Cancel reservations
+- View reservation history
+
+Cannot:
+- Assign tables
+- Choose tables
+- Mark guests seated
+- Complete occupied tables
+- Move tables
+- Manage Special Guest tables
+- Change table status
+- Edit the physical Floor Plan
+
+The Doorman should NOT need Floor Plan access for normal work.
+
+If Floor Plan currently appears in the Doorman sidebar, REMOVE it.
+
+WAITER:
+
+Can:
+- View Incoming reservations
+- Choose tables
+- Assign reservations
+- View the Floor Plan
+- Mark guests seated
+- Mark tables available
+- Move guests between tables
+- Manage Special Guest table reservations
+- Mark tables Out Of Service
+- Return tables to service
+- View reservation details
+
+Cannot:
+- Create normal customer reservations
+- Edit customer reservation information
+- Cancel normal reservations
+- Add/edit/remove employees
+- Edit the physical Floor Plan layout
+- Access owner settings
+
+Audit every route and action against these permissions.
+
+==================================================
+2. OWNER DASHBOARD
+==================================================
+
+Audit and improve the existing Owner Dashboard without completely redesigning it.
+
+It should give the owner an immediate operational overview.
+
+Include useful cards for:
+
+- Incoming Reservations
+- Waiting For Guests
+- Occupied Tables
+- Available Tables
+- Special Guest Tables
+- Out Of Service Tables
+
+Include sections for:
+
+Recent Reservations
+
+Current Floor Activity
+
+Recent Employee Activity
+
+Quick Actions:
+
+- Create Reservation
+- View Reservations
+- Open Floor Plan
+- Manage Employees
+
+All displayed information must come from the existing shared frontend state.
+
+Do not create disconnected mock statistics.
+
+==================================================
+3. RESERVATION DETAILS MODAL
+==================================================
+
+Create or improve one reusable Reservation Details modal/component.
+
+Use the SAME component everywhere reservation details are opened.
+
+Display:
+
+- Reservation Number
+- Customer Name
+- Phone Number
+- Guest Count
+- Special Notes
+- Current Status
+- Created Time
+- Waiting Time, when applicable
+- Assigned Floor, when applicable
+- Assigned Table, when applicable
+- Assignment Time, when applicable
+- Seated Time, when applicable
+- Completed Time, when applicable
+
+Actions shown inside this modal must depend on:
+
+1. Reservation status
+2. Logged-in user role
+
+Do not show unauthorized actions.
+
+==================================================
+4. EDIT RESERVATION
+==================================================
+
+Owner and Doorman must be able to edit an Incoming or Waiting For Guests reservation.
+
+Editable fields:
+
+- Customer Name
+- Phone Number
+- Guest Count
+- Special Notes
+
+If Guest Count is changed after a table has already been assigned and the new guest count exceeds the assigned table capacity:
+
+Show a warning:
+
+"This reservation now has more guests than the assigned table capacity."
+
+Do not automatically remove the table assignment.
+
+The waiter/owner can move the reservation manually if necessary.
+
+Once a reservation is Seated or Completed, customer information should be read-only.
+
+==================================================
+5. RESERVATION CANCELLATION
+==================================================
+
+Owner and Doorman can cancel a normal reservation.
+
+Before cancelling, show a confirmation modal.
+
+If the reservation is Incoming:
+
+- Change reservation status to Cancelled.
+
+If the reservation is Waiting For Guests and already has a table:
+
+- Change reservation status to Cancelled.
+- Release the assigned table.
+- Change the table back to Available.
+- Clear the table's current reservation.
+
+Do not allow Doormen to cancel a Seated reservation.
+
+If the Owner needs to end a seated reservation, use the normal Complete / Mark Table Available workflow instead.
+
+Cancelled reservations must remain visible in history.
+
+Store:
+
+- Cancelled time
+- Cancelled by
+
+Keep this in the frontend model so the backend can support it later.
+
+==================================================
+6. SPECIAL GUEST WORKFLOW — COMPLETE AUDIT
+==================================================
+
+Fully test and complete the existing Special Guest workflow.
+
+From the normal Floor Plan, Owner and Waiter should be able to click an Available table and select:
+
+RESERVE FOR SPECIAL GUEST
+
+Open a modal containing:
+
+- Guest Name — required
+- Phone Number — optional
+- Reason / Notes — optional
+
+After confirming:
+
+- Table status becomes Special Guest.
+- Store guest information.
+- Store who reserved the table.
+- Store reserved time.
+
+The table must clearly display:
+
+SPECIAL GUEST
+
+Guest Name
+
+This table must be completely unavailable when using CHOOSE TABLE for normal reservations.
+
+Clicking a Special Guest table should show:
+
+- Guest Name
+- Phone Number
+- Reason / Notes
+- Reserved By
+- Reserved Time
+
+Actions:
+
+MARK GUEST SEATED
+EDIT SPECIAL RESERVATION
+REMOVE SPECIAL RESERVATION
+
+MARK GUEST SEATED:
+
+When clicked:
+
+- Confirm the action.
+- Change table status to Occupied.
+- Preserve the Special Guest information while occupied.
+- Store seated time.
+
+When this table is later marked Available:
+
+- Clear the Special Guest information.
+- Return the table to Available.
+
+EDIT SPECIAL RESERVATION:
+
+Allow editing:
+
+- Guest Name
+- Phone Number
+- Reason / Notes
+
+REMOVE SPECIAL RESERVATION:
+
+Require confirmation.
+
+After removal:
+
+- Clear Special Guest information.
+- Return table to Available.
+
+Do not create a normal reservation queue entry for Special Guest table reservations.
+
+They are direct table reservations.
+
+==================================================
+7. OUT OF SERVICE WORKFLOW — COMPLETE AUDIT
+==================================================
+
+Owner and Waiter can mark an AVAILABLE table Out Of Service.
+
+Do not allow an Occupied or Waiting For Guests table to be marked Out Of Service without first clearing its current reservation.
+
+When selecting Mark Out Of Service, require:
+
+Reason
+
+Provide options:
+
+- Maintenance
+- Broken Furniture
+- Cleaning
+- Reserved Area
+- Other
+
+If Other is selected, allow a custom reason.
+
+Store:
+
+- Reason
+- Changed By
+- Changed Time
+
+Out Of Service tables must:
+
+- Be visibly different.
+- Be completely unselectable during CHOOSE TABLE mode.
+- Never count as Available.
+- Show the reason when clicked.
+
+Action:
+
+RETURN TO SERVICE
+
+After confirmation:
+
+- Clear Out Of Service information.
+- Return table to Available.
+
+==================================================
+8. EMPLOYEE MANAGEMENT
+==================================================
+
+Audit and complete the Owner Employee Management page.
+
+Only Owners can access this page.
+
+The employee list should display:
+
+- Employee Name
+- Username
+- Role
+- Status
+- Created Date
+
+Supported employee roles:
+
+DOORMAN
+WAITER
+
+Do not allow creating another Owner through the normal employee form.
+
+Owner can:
+
+ADD EMPLOYEE
+
+EDIT EMPLOYEE
+
+ACTIVATE / DEACTIVATE EMPLOYEE
+
+DELETE EMPLOYEE
+
+ADD EMPLOYEE fields:
+
+- Full Name
+- Username
+- Password
+- Confirm Password
+- Role: Doorman or Waiter
+
+EDIT EMPLOYEE:
+
+- Full Name
+- Username
+- Role
+- Status
+
+Include a separate:
+
+RESET PASSWORD
+
+action.
+
+Use confirmation dialogs for:
+
+- Delete Employee
+- Deactivate Employee
+- Reset Password
+
+For the frontend implementation, update the shared state correctly.
+
+Do not create backend endpoints yet.
+
+==================================================
+9. EMPLOYEE STATUS
+==================================================
+
+Support:
+
+Active
+Inactive
+
+Inactive employees should visually show as inactive.
+
+Structure the frontend login logic so inactive employees cannot successfully enter their dashboard.
+
+Since there is no backend yet, enforce this using the existing frontend data layer.
+
+This must later be replaceable by backend authentication logic.
+
+==================================================
+10. RESERVATIONS PAGE
+==================================================
+
+Audit the shared Reservations page.
+
+Tabs should be:
+
+INCOMING
+
+WAITING FOR GUESTS
+
+SEATED
+
+COMPLETED
+
+CANCELLED
+
+ALL
+
+Each tab must show an accurate live count from the shared reservation state.
+
+Add:
+
+Search by:
+- Customer Name
+- Phone Number
+- Reservation Number
+
+Filters:
+- Status
+- Floor
+- Table
+
+Each reservation card should clearly show:
+
+- Customer Name
+- Guest Count
+- Status
+- Waiting time or relevant timestamp
+- Assigned table, when applicable
+
+Clicking a reservation should open the reusable Reservation Details modal.
+
+Only show actions permitted for the logged-in role.
+
+==================================================
+11. RESERVATION HISTORY
+==================================================
+
+Completed and Cancelled reservations must remain accessible.
+
+Do not delete them from frontend state.
+
+History should allow searching and viewing details.
+
+Display relevant timestamps:
+
+Created
+
+Assigned
+
+Seated
+
+Completed
+
+Cancelled
+
+Do not allow editing historical Completed reservations.
+
+==================================================
+12. TABLE ACTION CONSISTENCY
+==================================================
+
+Audit EVERY table status and ensure clicking a table produces the correct actions.
+
+AVAILABLE:
+
+Owner:
+- Assign Reservation
+- Reserve For Special Guest
+- Mark Out Of Service
+- Edit Table Notes
+
+Waiter:
+- Assign Reservation
+- Reserve For Special Guest
+- Mark Out Of Service
+- Edit Table Notes
+
+WAITING FOR GUESTS:
+
+Owner/Waiter:
+- Mark Guests Seated
+- Move To Another Table
+- View Reservation
+
+OCCUPIED NORMAL RESERVATION:
+
+Owner/Waiter:
+- Mark Table Available
+- Move Guests
+- View Reservation
+
+SPECIAL GUEST:
+
+Owner/Waiter:
+- Mark Guest Seated
+- Edit Special Reservation
+- Remove Special Reservation
+
+OUT OF SERVICE:
+
+Owner/Waiter:
+- Return To Service
+
+Doorman should not have access to these table actions.
+
+==================================================
+13. CENTRALIZED OPERATIONS
+==================================================
+
+Continue using centralized operations.
+
+Make sure the frontend has clean centralized operations for:
+
+- createReservation
+- updateReservation
+- cancelReservation
+- assignTable
+- markGuestsSeated
+- completeReservation
+- moveReservation
+- reserveSpecialGuest
+- updateSpecialGuest
+- seatSpecialGuest
+- releaseSpecialGuest
+- markTableOutOfService
+- returnTableToService
+- addEmployee
+- updateEmployee
+- deactivateEmployee
+- activateEmployee
+- deleteEmployee
+- resetEmployeePassword
+
+Do not duplicate business logic inside page components.
+
+These functions will later be replaced or connected to backend APIs.
+
+==================================================
+14. DATA MODEL CLEANUP
+==================================================
+
+Audit all frontend TypeScript interfaces/types.
+
+Remove old fields related to:
+
+- QR
+- Payments
+- Payment Methods
+- Reservation Date selection
+- Reservation Time selection
+
+Keep automatically generated timestamps where operationally required.
+
+Make sure reservation, table, employee, and activity models contain everything required by the current UI.
+
+Do not maintain obsolete fields purely for old components that no longer exist.
+
+==================================================
+15. FINAL PERMISSION TEST
+==================================================
+
+Test the application as each role.
+
+DOORMAN TEST:
+
+- Can create reservation.
+- Can edit Incoming reservation.
+- Can cancel Incoming reservation.
+- Can search reservations.
+- Cannot choose a table.
+- Cannot access Floor Plan.
+- Cannot manage employees.
+
+WAITER TEST:
+
+- Sees Incoming reservation immediately.
+- Can click CHOOSE TABLE.
+- Can assign table.
+- Can mark guests seated.
+- Can mark table available.
+- Can move guests.
+- Can create/edit/remove Special Guest reservation.
+- Can manage Out Of Service status.
+- Cannot create normal reservation.
+- Cannot edit normal customer details.
+- Cannot cancel normal reservation.
+- Cannot edit Floor Plan layout.
+- Cannot manage employees.
+
+OWNER TEST:
+
+- Can perform all reservation operations.
+- Can access Floor Plan.
+- Can edit Floor Plan layout.
+- Can manage employees.
+- Can manage Special Guest tables.
+- Can manage Out Of Service tables.
+
+Fix every permission inconsistency found.
+
+==================================================
+16. FINAL WORKFLOW TEST
+==================================================
+
+Before finishing, test:
+
+NORMAL RESERVATION:
+
+Create
+→ Incoming
+→ Choose Table
+→ Waiting For Guests
+→ Seated
+→ Completed
+→ Table Available
+
+CANCELLED RESERVATION:
+
+Create
+→ Assign Table
+→ Cancel
+→ Table Released
+→ Reservation remains in Cancelled history
+
+SPECIAL GUEST:
+
+Available Table
+→ Reserve For Special Guest
+→ Edit Details
+→ Mark Guest Seated
+→ Occupied
+→ Mark Table Available
+
+OUT OF SERVICE:
+
+Available
+→ Out Of Service
+→ Cannot be selected
+→ Return To Service
+→ Available
+
+EMPLOYEE:
+
+Create Waiter
+→ Edit
+→ Deactivate
+→ Confirm access blocked
+→ Reactivate
+
+Fix any broken state transitions or UI inconsistencies.
+
+==================================================
+17. FINAL REQUIREMENTS
+==================================================
+
+Before finishing:
+
+- Run the full TypeScript/build check.
+- Fix every compilation error.
+- Check for broken imports.
+- Check for dead components.
+- Check for duplicate workflow logic.
+- Check every visible action button.
+- Verify shared state synchronization.
+- Verify permissions at both route and UI-action level.
+- Do not implement the backend.
+- Do not generate an API contract yet.
+- Do not unnecessarily redesign working UI.
+
+The result should be a fully functional frontend prototype of the complete restaurant operation system.
+
+Prompt 5 will handle the final frontend audit, polish, responsiveness, and backend API contract.

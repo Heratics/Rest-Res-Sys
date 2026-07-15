@@ -1,0 +1,1 @@
+- [BOOMCLUB Architecture](boomclub-arch.md) — Frontend-only nightclub reservation system; dark luxury theme; two portals: Owner (/owner) and Staff (/employee).

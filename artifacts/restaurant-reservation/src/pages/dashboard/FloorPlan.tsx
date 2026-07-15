@@ -13,6 +13,11 @@ import {
   markGuestsSeated,
   completeReservation,
   moveReservation,
+  seatSpecialGuest as seatSpecialGuestOp,
+  updateSpecialGuest as updateSpecialGuestOp,
+  releaseSpecialGuest,
+  returnTableToService,
+  markTableOutOfService,
   buildOps,
 } from "@/services/reservationOperations";
 import { Button } from "@/components/ui/button";
@@ -141,7 +146,7 @@ export default function FloorPlan() {
   const { isAuthenticated: isOwner } = useOwnerAuth();
   const { employee } = useEmployeeAuth();
   const { floorTables, updateFloorTable, addFloorTable, removeFloorTable, saveFloorLayout } = useFloorPlanStore();
-  const { reservations, updateStatus: updateReservationStatus } = useReservationStore();
+  const { reservations, updateStatus: updateReservationStatus, updateReservation } = useReservationStore();
   const { employees } = useEmployeeStore();
   const { pendingTableAssignment, setPendingTableAssignment } = useWorkflowStore();
   const [, navigate] = useLocation();
@@ -150,7 +155,7 @@ export default function FloorPlan() {
   const canEdit = isOwner;
 
   // Centralized ops object
-  const ops = buildOps(updateReservationStatus, updateFloorTable);
+  const ops = buildOps(updateReservationStatus, updateFloorTable, updateReservation);
 
   // ── Floor & Selection state ──
   const [activeFloor, setActiveFloor] = useState<1 | 2>(1);
@@ -168,6 +173,11 @@ export default function FloorPlan() {
     assignAnyway: boolean;
   } | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // ── Confirmation states ──
+  const [confirmRemoveSpecial, setConfirmRemoveSpecial] = useState(false);
+  const [confirmReturnService, setConfirmReturnService] = useState(false);
+  const [confirmSeatSpecial, setConfirmSeatSpecial] = useState(false);
 
   // ── Form state ──
   const [assignSearch, setAssignSearch] = useState("");
@@ -299,8 +309,21 @@ export default function FloorPlan() {
     setEditCapInput(String(table.capacity));
     setEditShapeInput(table.shape);
     setAssignSearch("");
-    setSpecialForm({ name: "", phone: "", reason: "", reservedBy: "" });
+    // Pre-populate special guest form if the table already has a guest
+    if (table.specialGuest) {
+      setSpecialForm({
+        name: table.specialGuest.name,
+        phone: table.specialGuest.phone ?? "",
+        reason: table.specialGuest.reason,
+        reservedBy: table.specialGuest.reservedBy,
+      });
+    } else {
+      setSpecialForm({ name: "", phone: "", reason: "", reservedBy: "" });
+    }
     setOosReason("");
+    setConfirmRemoveSpecial(false);
+    setConfirmReturnService(false);
+    setConfirmSeatSpecial(false);
   };
 
   // ── Live update helper ──
@@ -319,9 +342,9 @@ export default function FloorPlan() {
     const { reservation, isMove, oldTableId, prevReservationStatus } = pendingTableAssignment;
 
     if (isMove && oldTableId && prevReservationStatus) {
-      moveReservation(reservation.id, oldTableId, table.id, prevReservationStatus, ops);
+      moveReservation(reservation.id, oldTableId, table.id, prevReservationStatus, ops, { number: table.number, floor: table.floor });
     } else {
-      assignTableOp(reservation.id, table.id, ops);
+      assignTableOp(reservation.id, table.id, ops, { number: table.number, floor: table.floor });
     }
 
     setConfirmAssignState(null);
@@ -332,8 +355,8 @@ export default function FloorPlan() {
 
   // ── Action handlers ──
   const handleAssignReservation = (reservationId: string) => {
-    if (!selectedId) return;
-    assignTableOp(reservationId, selectedId, ops);
+    if (!selectedId || !selectedTable) return;
+    assignTableOp(reservationId, selectedId, ops, { number: selectedTable.number, floor: selectedTable.floor });
     setModalStep("main");
     setSelectedId(null);
   };
@@ -342,9 +365,28 @@ export default function FloorPlan() {
     if (!selectedId || !selectedTable) return;
     if (selectedTable.reservationId) {
       markGuestsSeated(selectedTable.reservationId, selectedId, ops);
-    } else {
-      applyUpdate(selectedId, { status: "Occupied", seatedAt: new Date().toISOString() });
     }
+    setSelectedId(null);
+  };
+
+  const handleSeatSpecialGuest = () => {
+    if (!selectedId) return;
+    seatSpecialGuestOp(selectedId, ops);
+    setConfirmSeatSpecial(false);
+    setSelectedId(null);
+  };
+
+  const handleRemoveSpecialConfirmed = () => {
+    if (!selectedId) return;
+    releaseSpecialGuest(selectedId, ops);
+    setConfirmRemoveSpecial(false);
+    setSelectedId(null);
+  };
+
+  const handleReturnToServiceConfirmed = () => {
+    if (!selectedId) return;
+    returnTableToService(selectedId, ops);
+    setConfirmReturnService(false);
     setSelectedId(null);
   };
 
@@ -374,26 +416,28 @@ export default function FloorPlan() {
   };
 
   const handleSpecialGuest = () => {
-    if (!selectedId) return;
-    applyUpdate(selectedId, {
-      status: "Special",
-      specialGuest: {
-        name: specialForm.name,
-        reason: specialForm.reason,
-        reservedBy: specialForm.reservedBy || (employee?.name ?? "Staff"),
-        reservedAt: new Date().toISOString(),
-      },
-    });
-    setSelectedId(null);
+    if (!selectedId || !selectedTable) return;
+    const guestInfo = {
+      name: specialForm.name,
+      phone: specialForm.phone || undefined,
+      reason: specialForm.reason,
+      reservedBy: specialForm.reservedBy || (employee?.name ?? "Staff"),
+      reservedAt: selectedTable.specialGuest?.reservedAt ?? new Date().toISOString(),
+    };
+    if (selectedTable.specialGuest) {
+      // Editing existing special guest
+      updateSpecialGuestOp(selectedId, guestInfo, ops);
+    } else {
+      // New special guest
+      applyUpdate(selectedId, { status: "Special", specialGuest: guestInfo });
+    }
+    setModalStep("main");
   };
 
   const handleOutOfService = () => {
     if (!selectedId || !oosReason.trim()) return;
     const by = isOwner ? "Owner" : employee?.name ?? "Staff";
-    applyUpdate(selectedId, {
-      status: "OutOfService",
-      outOfService: { reason: oosReason, disabledBy: by, disabledAt: new Date().toISOString() },
-    });
+    markTableOutOfService(selectedId, oosReason, by, ops);
     setSelectedId(null);
   };
 
@@ -857,22 +901,47 @@ export default function FloorPlan() {
                       <div className="space-y-3">
                         <div className="bg-purple-500/8 border border-purple-500/20 rounded-xl p-3 space-y-2">
                           <Row label="Guest"       val={selectedTable.specialGuest.name} />
+                          {selectedTable.specialGuest.phone && (
+                            <Row label="Phone"     val={selectedTable.specialGuest.phone} />
+                          )}
                           <Row label="Reason"      val={selectedTable.specialGuest.reason} />
                           <Row label="Reserved by" val={selectedTable.specialGuest.reservedBy} />
                           <Row label="At"          val={fmtTime(selectedTable.specialGuest.reservedAt)} />
                         </div>
-                        <Button className="w-full h-9 gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm"
-                          onClick={handleMarkSeated}>
-                          <CheckCircle2 className="w-4 h-4" /> Mark Guest Seated
-                        </Button>
+                        {/* Seat confirmation */}
+                        {confirmSeatSpecial ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-center text-muted-foreground">Mark guest as seated? Table will become Occupied.</p>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1" onClick={() => setConfirmSeatSpecial(false)}>Cancel</Button>
+                              <Button size="sm" className="flex-1 bg-purple-600 hover:bg-purple-700" onClick={handleSeatSpecialGuest}>Confirm</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button className="w-full h-9 gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                            onClick={() => setConfirmSeatSpecial(true)}>
+                            <CheckCircle2 className="w-4 h-4" /> Mark Guest Seated
+                          </Button>
+                        )}
                         <Button className="w-full h-9 gap-2 text-sm" variant="outline"
                           onClick={() => setModalStep("special")}>
                           <Pencil className="w-4 h-4" /> Edit Details
                         </Button>
-                        <Button className="w-full h-9 gap-2 text-sm text-destructive" variant="ghost"
-                          onClick={handleMarkAvailable}>
-                          <X className="w-4 h-4" /> Remove Reservation
-                        </Button>
+                        {/* Remove confirmation */}
+                        {confirmRemoveSpecial ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-center text-muted-foreground">Remove this special reservation? Table returns to Available.</p>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1" onClick={() => setConfirmRemoveSpecial(false)}>Cancel</Button>
+                              <Button size="sm" className="flex-1 bg-destructive hover:bg-destructive/90" onClick={handleRemoveSpecialConfirmed}>Remove</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button className="w-full h-9 gap-2 text-sm text-destructive" variant="ghost"
+                            onClick={() => setConfirmRemoveSpecial(true)}>
+                            <X className="w-4 h-4" /> Remove Reservation
+                          </Button>
+                        )}
                       </div>
                     )}
 
@@ -884,10 +953,20 @@ export default function FloorPlan() {
                           <Row label="Disabled by" val={selectedTable.outOfService.disabledBy} />
                           <Row label="Since"       val={elapsed(selectedTable.outOfService.disabledAt)} />
                         </div>
-                        <Button className="w-full h-9 gap-2 text-sm" variant="outline"
-                          onClick={handleMarkAvailable}>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Return to Service
-                        </Button>
+                        {confirmReturnService ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-center text-muted-foreground">Return table to service? It will be marked Available.</p>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1" onClick={() => setConfirmReturnService(false)}>Cancel</Button>
+                              <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleReturnToServiceConfirmed}>Confirm</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button className="w-full h-9 gap-2 text-sm" variant="outline"
+                            onClick={() => setConfirmReturnService(true)}>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Return to Service
+                          </Button>
+                        )}
                       </div>
                     )}
                   </>
@@ -970,7 +1049,7 @@ export default function FloorPlan() {
                       <Label className="text-xs text-muted-foreground">Reason</Label>
                       {/* Quick-select presets */}
                       <div className="grid grid-cols-2 gap-1.5 mb-2">
-                        {["Broken Chair", "Maintenance", "Reserved Area", "Cleaning"].map(r => (
+                        {["Maintenance", "Broken Furniture", "Cleaning", "Reserved Area"].map(r => (
                           <button key={r} onClick={() => setOosReason(r)}
                             className={`py-1.5 px-2 rounded-lg border text-xs transition-all ${
                               oosReason === r ? "border-zinc-500 bg-zinc-700/50 text-white" : "border-white/10 text-muted-foreground hover:border-white/20"
@@ -980,7 +1059,7 @@ export default function FloorPlan() {
                         ))}
                       </div>
                       <Input value={oosReason} onChange={e => setOosReason(e.target.value)}
-                        placeholder="Or type a custom reason..." className="h-8 text-sm" />
+                        placeholder="Other — type a custom reason..." className="h-8 text-sm" />
                     </div>
                     <Button className="w-full h-9 gap-2 text-sm border-zinc-600 text-zinc-300 hover:bg-zinc-700" variant="outline"
                       disabled={!oosReason.trim()} onClick={handleOutOfService}>
