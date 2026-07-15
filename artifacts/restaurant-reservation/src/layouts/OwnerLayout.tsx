@@ -2,20 +2,17 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, CalendarPlus, ClipboardList, QrCode,
-  Users, CreditCard, UserCog, Settings, LogOut, Menu, X, UtensilsCrossed,
+  LayoutDashboard, ClipboardList, Map, UserCog, Settings,
+  LogOut, Menu, X, UtensilsCrossed,
 } from "lucide-react";
 import { useOwnerAuth } from "@/services/authStore";
 
 const NAV = [
-  { label: "Dashboard",          path: "/owner",              icon: LayoutDashboard },
-  { label: "New Reservation",    path: "/owner/new-reservation", icon: CalendarPlus },
-  { label: "Reservations",       path: "/owner/reservations", icon: ClipboardList },
-  { label: "QR Scanner",         path: "/owner/qr-scanner",   icon: QrCode },
-  { label: "Guests",             path: "/owner/guests",       icon: Users },
-  { label: "Payments",           path: "/owner/payments",     icon: CreditCard },
-  { label: "Employees",          path: "/owner/employees",    icon: UserCog },
-  { label: "Settings",           path: "/owner/settings",     icon: Settings },
+  { label: "Dashboard",    path: "/owner",             icon: LayoutDashboard },
+  { label: "Reservations", path: "/owner/reservations", icon: ClipboardList },
+  { label: "Floor Plan",   path: "/owner/floor-plan",   icon: Map },
+  { label: "Employees",    path: "/owner/employees",    icon: UserCog },
+  { label: "Settings",     path: "/owner/settings",     icon: Settings },
 ];
 
 export function OwnerLayout({ children }: { children: ReactNode }) {
@@ -25,7 +22,7 @@ export function OwnerLayout({ children }: { children: ReactNode }) {
 
   const SidebarContent = () => (
     <>
-      <div className="p-8 pb-8 flex flex-col items-center gap-1 border-b border-sidebar-border">
+      <div className="p-8 pb-6 flex flex-col items-center gap-1 border-b border-sidebar-border">
         <Link href="/owner" className="font-serif text-2xl tracking-widest text-primary cursor-pointer">
           BOOMCLUB
         </Link>
@@ -74,14 +71,9 @@ export function OwnerLayout({ children }: { children: ReactNode }) {
         <SidebarContent />
       </aside>
 
-      {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between px-5 h-16 border-b border-border bg-card/90 backdrop-blur-md z-30">
-
         <span className="font-serif text-xl tracking-widest text-primary">BOOMCLUB</span>
-        <button
-          className="p-2 text-muted-foreground hover:text-white transition-colors"
-          onClick={() => setMobileOpen((v) => !v)}
-        >
+        <button className="p-2 text-muted-foreground hover:text-white" onClick={() => setMobileOpen(v => !v)}>
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>

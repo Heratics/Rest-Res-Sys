@@ -1,7 +1,5 @@
 export type ReservationStatus = "Pending" | "Confirmed" | "Checked In" | "Cancelled";
-export type PaymentMethod = "CliQ" | "Pay Upon Arrival";
-export type PaymentStatus = "Pending" | "Paid" | "Verified";
-export type EmployeeRole = "Supervisor" | "Senior Staff" | "Host" | "Waiter";
+export type EmployeeRole = "Owner" | "Doorman" | "Waiter";
 export type EmployeeStatus = "Active" | "Inactive";
 
 export interface Customer {
@@ -14,13 +12,9 @@ export interface Reservation {
   id: string;
   confirmationNumber: string;
   customer: Customer;
-  date: string;
-  time: string;
   guests: number;
   specialRequests?: string;
   status: ReservationStatus;
-  paymentMethod: PaymentMethod;
-  paymentStatus: PaymentStatus;
   createdAt: string;
 }
 
@@ -50,131 +44,66 @@ export const mockCustomers: Customer[] = [
   { id: "c5", name: "Isabella Rossi", phone: "+962 6 555 0105" },
 ];
 
-const today = new Date().toISOString().split("T")[0];
-const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
-
 export let mockReservations: Reservation[] = [
   {
     id: "r1",
-    confirmationNumber: "#AUR-2025-0471",
+    confirmationNumber: "#AUR-0471",
     customer: mockCustomers[0],
-    date: today,
-    time: "19:00",
     guests: 2,
     specialRequests: "Window seat preferred. Anniversary dinner.",
     status: "Confirmed",
-    paymentMethod: "CliQ",
-    paymentStatus: "Verified",
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "r2",
-    confirmationNumber: "#AUR-2025-0472",
-    customer: mockCustomers[1],
-    date: today,
-    time: "20:30",
-    guests: 4,
-    status: "Checked In",
-    paymentMethod: "Pay Upon Arrival",
-    paymentStatus: "Pending",
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "r3",
-    confirmationNumber: "#AUR-2025-0473",
-    customer: mockCustomers[2],
-    date: today,
-    time: "21:00",
-    guests: 2,
-    status: "Pending",
-    paymentMethod: "CliQ",
-    paymentStatus: "Pending",
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-  {
-    id: "r4",
-    confirmationNumber: "#AUR-2025-0474",
-    customer: mockCustomers[3],
-    date: tomorrow,
-    time: "18:00",
-    guests: 6,
-    specialRequests: "Vegan options needed",
-    status: "Confirmed",
-    paymentMethod: "CliQ",
-    paymentStatus: "Verified",
-    createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    id: "r5",
-    confirmationNumber: "#AUR-2025-0475",
-    customer: mockCustomers[4],
-    date: tomorrow,
-    time: "19:30",
-    guests: 2,
-    status: "Cancelled",
-    paymentMethod: "Pay Upon Arrival",
-    paymentStatus: "Pending",
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "r6",
-    confirmationNumber: "#AUR-2025-0476",
-    customer: mockCustomers[0],
-    date: tomorrow,
-    time: "20:00",
-    guests: 2,
-    status: "Pending",
-    paymentMethod: "CliQ",
-    paymentStatus: "Pending",
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
-    id: "r7",
-    confirmationNumber: "#AUR-2025-0477",
+    id: "r2",
+    confirmationNumber: "#AUR-0472",
     customer: mockCustomers[1],
-    date: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
-    time: "19:00",
-    guests: 8,
-    status: "Confirmed",
-    paymentMethod: "Pay Upon Arrival",
-    paymentStatus: "Pending",
-    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-  {
-    id: "r8",
-    confirmationNumber: "#AUR-2025-0478",
-    customer: mockCustomers[2],
-    date: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
-    time: "21:30",
-    guests: 2,
-    status: "Confirmed",
-    paymentMethod: "CliQ",
-    paymentStatus: "Verified",
-    createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
-  },
-  {
-    id: "r9",
-    confirmationNumber: "#AUR-2025-0479",
-    customer: mockCustomers[3],
-    date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
-    time: "18:30",
     guests: 4,
-    status: "Pending",
-    paymentMethod: "CliQ",
-    paymentStatus: "Pending",
-    createdAt: new Date().toISOString(),
+    status: "Checked In",
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
   },
   {
-    id: "r10",
-    confirmationNumber: "#AUR-2025-0480",
-    customer: mockCustomers[4],
-    date: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
-    time: "20:00",
+    id: "r3",
+    confirmationNumber: "#AUR-0473",
+    customer: mockCustomers[2],
     guests: 2,
+    specialRequests: "Nut allergy — please inform kitchen.",
+    status: "Pending",
+    createdAt: new Date(Date.now() - 3600000 * 0.5).toISOString(),
+  },
+  {
+    id: "r4",
+    confirmationNumber: "#AUR-0474",
+    customer: mockCustomers[3],
+    guests: 6,
+    specialRequests: "Vegan options needed for 2 guests.",
     status: "Confirmed",
-    paymentMethod: "Pay Upon Arrival",
-    paymentStatus: "Pending",
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+  },
+  {
+    id: "r5",
+    confirmationNumber: "#AUR-0475",
+    customer: mockCustomers[4],
+    guests: 2,
+    status: "Cancelled",
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  },
+  {
+    id: "r6",
+    confirmationNumber: "#AUR-0476",
+    customer: mockCustomers[0],
+    guests: 2,
+    status: "Pending",
+    createdAt: new Date(Date.now() - 600000).toISOString(),
+  },
+  {
+    id: "r7",
+    confirmationNumber: "#AUR-0477",
+    customer: mockCustomers[1],
+    guests: 8,
+    specialRequests: "Birthday cake prepared in advance.",
+    status: "Confirmed",
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
   },
 ];
 
@@ -185,12 +114,10 @@ export const mockTables: Table[] = [
   { id: "t4", number: "14", capacity: 4, status: "Reserved", reservationId: "r1" },
   { id: "t5", number: "21", capacity: 4, status: "Available" },
   { id: "t6", number: "22", capacity: 4, status: "Available" },
-  { id: "t7", number: "23", capacity: 6, status: "Reserved" },
+  { id: "t7", number: "23", capacity: 6, status: "Reserved", reservationId: "r4" },
   { id: "t8", number: "24", capacity: 6, status: "Available" },
   { id: "t9", number: "31", capacity: 8, status: "Available" },
   { id: "t10", number: "32", capacity: 2, status: "Available" },
-  { id: "t11", number: "41", capacity: 2, status: "Available" },
-  { id: "t12", number: "42", capacity: 4, status: "Available" },
 ];
 
 export const restaurantSettings = {
@@ -198,10 +125,6 @@ export const restaurantSettings = {
   phone: "+962 790022006",
   address: "6th Cir., Amman",
   openingHours: "Tue-Mon, 22:00 - 03:30",
-  cliqType: "alias" as "alias" | "phone",
-  cliqValue: "@BOOMCLUB.restaurant",
-  depositRequired: true,
-  allowPayUponArrival: true,
 };
 
 export const mockEmployees: Employee[] = [
@@ -210,7 +133,7 @@ export const mockEmployees: Employee[] = [
     name: "Luca Moreau",
     username: "luca.m",
     phone: "+962 6 555 0201",
-    role: "Supervisor",
+    role: "Owner",
     status: "Active",
     dateAdded: "2024-03-15",
   },
@@ -219,7 +142,7 @@ export const mockEmployees: Employee[] = [
     name: "Amara Diallo",
     username: "amara.d",
     phone: "+962 6 555 0202",
-    role: "Senior Staff",
+    role: "Doorman",
     status: "Active",
     dateAdded: "2024-05-02",
   },
@@ -228,7 +151,7 @@ export const mockEmployees: Employee[] = [
     name: "Theo Nakamura",
     username: "theo.n",
     phone: "+962 6 555 0203",
-    role: "Host",
+    role: "Doorman",
     status: "Active",
     dateAdded: "2024-07-19",
   },
@@ -255,7 +178,7 @@ export const mockEmployees: Employee[] = [
     name: "Priya Sharma",
     username: "priya.s",
     phone: "+962 6 555 0206",
-    role: "Senior Staff",
+    role: "Waiter",
     status: "Active",
     dateAdded: "2025-01-10",
   },
@@ -274,7 +197,7 @@ export const createReservation = (
   const newRes: Reservation = {
     ...data,
     id: `r${Math.floor(Math.random() * 10000)}`,
-    confirmationNumber: `#AUR-2025-${Math.floor(Math.random() * 10000)
+    confirmationNumber: `#AUR-${Math.floor(Math.random() * 10000)
       .toString()
       .padStart(4, "0")}`,
     createdAt: new Date().toISOString(),

@@ -1,0 +1,198 @@
+The reservation workflow has changed completely. I want you to redesign the application architecture for the Reservations module before adding advanced features.
+
+IMPORTANT:
+- Do NOT create placeholder components.
+- Do NOT create TODOs.
+- Do NOT leave unfinished code.
+- Keep the existing BoomClub design language and dark theme.
+- Do not break any existing working pages.
+- Ensure the application compiles successfully before finishing.
+
+--------------------------------------------------
+1. Remove Old Reservation Workflow
+--------------------------------------------------
+
+Completely remove every frontend component related to:
+
+- QR Codes
+- QR Ticket generation
+- QR scanner
+- QR validation
+- Payment Method section
+- CliQ payment
+- Pay Upon Arrival
+- Reservation Date selector
+- Reservation Time selector
+- Any text referring to QR tickets or payments
+
+Remove unused components after updating imports.
+
+--------------------------------------------------
+2. New Employee Roles
+--------------------------------------------------
+
+Replace the generic Employee role with:
+
+- Owner
+- Doorman
+- Waiter
+
+Update:
+
+Navigation
+
+Sidebar
+
+Protected Routes
+
+Role Guards
+
+Menus
+
+Dashboard navigation
+
+Each role should only see pages they are allowed to access.
+
+--------------------------------------------------
+3. Reservation Creation
+--------------------------------------------------
+
+The Doorman creates reservations.
+
+The reservation form should now contain ONLY:
+
+Customer Name
+
+Phone Number
+
+Guest Count
+
+Special Notes (optional)
+
+Nothing else.
+
+No date.
+
+No time.
+
+No payment.
+
+No QR.
+
+After creating a reservation display:
+
+Reservation Created Successfully
+
+Return to Reservation Queue
+
+--------------------------------------------------
+4. New Reservation Page
+--------------------------------------------------
+
+The Reservations page should no longer open directly into the reservation form.
+
+Instead redesign the page into two sections.
+
+LEFT SIDE
+
+Incoming Reservations
+
+Waiting Reservations
+
+Search
+
+Filters
+
+Reservation Cards
+
+RIGHT SIDE
+
+Empty placeholder panel saying:
+
+"No floor plan has been implemented yet."
+
+Leave this empty for now.
+
+We will build the floor plan in the next prompt.
+
+--------------------------------------------------
+5. Waiter Dashboard
+--------------------------------------------------
+
+Create a brand new Waiter Dashboard.
+
+Sections:
+
+Incoming Reservations
+
+Assigned Tables
+
+Occupied Tables
+
+Recent Activity
+
+For now use the existing API layer if available.
+
+Do not create mock APIs.
+
+--------------------------------------------------
+6. Doorman Dashboard
+--------------------------------------------------
+
+Create a Doorman Dashboard.
+
+Include:
+
+Create Reservation button
+
+Reservation Queue
+
+Reservation Search
+
+Reservation History
+
+--------------------------------------------------
+7. Navigation
+--------------------------------------------------
+
+Add a new sidebar item:
+
+Floor Plan
+
+Do NOT build it yet.
+
+Create an empty page with:
+
+"Floor Plan Coming Next"
+
+--------------------------------------------------
+8. Cleanup
+--------------------------------------------------
+
+Remove every unused component.
+
+Remove unused imports.
+
+Remove dead routes.
+
+Remove old reservation components.
+
+Remove QR-related icons.
+
+Remove payment-related icons.
+
+Ensure the application compiles successfully.
+
+--------------------------------------------------
+9. Final Requirements
+--------------------------------------------------
+
+Before finishing:
+
+- Verify all pages load correctly.
+- Verify role navigation works.
+- Verify no broken imports remain.
+- Verify there are no TypeScript/JavaScript errors.
+- Do not modify backend APIs.
+- Do not redesign the entire application.
+- Only redesign the reservation workflow and navigation.

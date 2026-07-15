@@ -11,16 +11,10 @@ import {
 } from "./mockData";
 
 // ─── Session keys ───────────────────────────────────────────────────────────
-const CUSTOMER_SESSION_KEY = "BOOMCLUB_mock_session";
 const OWNER_SESSION_KEY = "BOOMCLUB_owner_session";
 const EMPLOYEE_SESSION_KEY = "BOOMCLUB_employee_session";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-export interface AuthUser {
-  phone: string;
-  name: string;
-}
-
 export interface OwnerUser {
   username: string;
 }
@@ -30,14 +24,6 @@ export interface EmployeeUser {
   name: string;
   username: string;
   role: string;
-}
-
-export interface AuthState {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  login: (phone: string, pass: string) => void;
-  register: (name: string, phone: string, pass: string) => void;
-  logout: () => void;
 }
 
 export interface OwnerAuthState {
@@ -57,9 +43,7 @@ export interface EmployeeAuthState {
 export interface ReservationState {
   reservations: Reservation[];
   getReservation: (id: string) => Reservation | undefined;
-  getReservationByPhone: (phone: string) => Reservation | undefined;
   updateStatus: (id: string, status: Reservation["status"]) => void;
-  updatePayment: (id: string, status: Reservation["paymentStatus"]) => void;
   addReservation: (data: Omit<Reservation, "id" | "confirmationNumber" | "createdAt">) => Reservation;
 }
 
@@ -81,7 +65,6 @@ export interface RestaurantState {
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 export const StoreContext = createContext<{
-  auth: AuthState;
   ownerAuth: OwnerAuthState;
   employeeAuth: EmployeeAuthState;
   reservationStore: ReservationState;
@@ -114,7 +97,6 @@ function saveSession<T>(key: string, value: T | null) {
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => loadSession<AuthUser>(CUSTOMER_SESSION_KEY));
   const [owner, setOwner] = useState<OwnerUser | null>(() => loadSession<OwnerUser>(OWNER_SESSION_KEY));
   const [employeeUser, setEmployeeUser] = useState<EmployeeUser | null>(() =>
     loadSession<EmployeeUser>(EMPLOYEE_SESSION_KEY)
@@ -126,30 +108,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
 
   // Sync sessions to localStorage
-  useEffect(() => { saveSession(CUSTOMER_SESSION_KEY, user); }, [user]);
   useEffect(() => { saveSession(OWNER_SESSION_KEY, owner); }, [owner]);
   useEffect(() => { saveSession(EMPLOYEE_SESSION_KEY, employeeUser); }, [employeeUser]);
-
-  // ── Customer auth ──
-  const auth: AuthState = {
-    user,
-    isAuthenticated: !!user,
-    login: (phone, _pass) => {
-      const existing = reservations.find((r) => r.customer.phone === phone);
-      const name = existing ? existing.customer.name : "Valued Guest";
-      setUser({ phone, name });
-    },
-    register: (name, phone, _pass) => {
-      setUser({ phone, name });
-    },
-    logout: () => setUser(null),
-  };
 
   // ── Owner auth ──
   const ownerAuth: OwnerAuthState = {
     owner,
     isAuthenticated: !!owner,
-    // Mock: any credentials work
     login: (username, _pass) => setOwner({ username }),
     logout: () => setOwner(null),
   };
@@ -158,7 +123,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const employeeAuth: EmployeeAuthState = {
     employee: employeeUser,
     isAuthenticated: !!employeeUser,
-    // Mock: match against mock employees by username, or fall back to a generic user
     login: (username, _pass) => {
       const found = employees.find(
         (e) => e.username === username && e.status === "Active"
@@ -166,8 +130,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (found) {
         setEmployeeUser({ id: found.id, name: found.name, username: found.username, role: found.role });
       } else {
-        // Generic fallback — any credentials work
-        setEmployeeUser({ id: "e_mock", name: "Staff Member", username, role: "Waiter" });
+        // Generic fallback — any credentials work, defaults to Doorman
+        setEmployeeUser({ id: "e_mock", name: username, username, role: "Doorman" });
       }
     },
     logout: () => setEmployeeUser(null),
@@ -177,11 +141,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const reservationStore: ReservationState = {
     reservations,
     getReservation: (id) => reservations.find((r) => r.id === id),
-    getReservationByPhone: (phone) => reservations.find((r) => r.customer.phone === phone),
     updateStatus: (id, status) =>
       setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
-    updatePayment: (id, status) =>
-      setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, paymentStatus: status } : r))),
     addReservation: (data) => {
       const newRes = createReservation(data);
       setReservations((prev) => [newRes, ...prev]);
@@ -216,7 +177,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   return (
     <StoreContext.Provider
-      value={{ auth, ownerAuth, employeeAuth, reservationStore, employeeStore, restaurantStore }}
+      value={{ ownerAuth, employeeAuth, reservationStore, employeeStore, restaurantStore }}
     >
       {children}
     </StoreContext.Provider>
@@ -230,7 +191,6 @@ function useStore() {
   return ctx;
 }
 
-export const useAuthStore = () => useStore().auth;
 export const useOwnerAuth = () => useStore().ownerAuth;
 export const useEmployeeAuth = () => useStore().employeeAuth;
 export const useReservationStore = () => useStore().reservationStore;

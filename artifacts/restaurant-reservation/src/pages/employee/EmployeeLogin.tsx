@@ -31,17 +31,12 @@ export default function EmployeeLogin() {
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4 relative">
       <div className="fixed inset-0 bg-noise z-0" />
-
       <div className="absolute inset-0 z-0 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/4 rounded-full blur-3xl" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md relative z-10"
-      >
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }} className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <p className="font-serif text-3xl tracking-widest text-primary mb-1">BOOMCLUB</p>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Staff Portal</p>
@@ -55,7 +50,7 @@ export default function EmployeeLogin() {
               </div>
               <h1 className="font-serif text-2xl text-white mb-1">Staff Login</h1>
               <p className="text-sm text-muted-foreground text-center">
-                Enter your employee credentials to access the staff dashboard.
+                Enter your employee credentials to access your dashboard.
               </p>
             </div>
 
@@ -65,40 +60,27 @@ export default function EmployeeLogin() {
                   {error}
                 </div>
               )}
-
               <div className="space-y-2">
                 <Label htmlFor="emp-username">Employee ID or Username</Label>
-                <Input
-                  id="emp-username"
-                  value={credentials.username}
+                <Input id="emp-username" value={credentials.username}
                   onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                  placeholder="e.g. luca.m"
-                  autoComplete="username"
-                />
+                  placeholder="e.g. amara.d" autoComplete="username" />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="emp-password">Password</Label>
-                <Input
-                  id="emp-password"
-                  type="password"
-                  value={credentials.password}
+                <Input id="emp-password" type="password" value={credentials.password}
                   onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                />
+                  placeholder="••••••••" autoComplete="current-password" />
               </div>
-
-              <div className="pt-2">
-                <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In to Staff Dashboard"}
-                </Button>
-              </div>
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
             </form>
 
-            <p className="text-center text-xs text-muted-foreground/50 mt-6">
-              Mock mode — try username <span className="text-primary/60">luca.m</span> or any credentials
-            </p>
+            <div className="mt-6 space-y-1 text-xs text-muted-foreground/50 text-center">
+              <p>Doorman: <span className="text-primary/60">amara.d</span> / any password</p>
+              <p>Waiter: <span className="text-primary/60">celine.d</span> / any password</p>
+            </div>
           </CardContent>
         </Card>
 
