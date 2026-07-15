@@ -1,0 +1,270 @@
+The application architecture is now complete. Do NOT redesign the navigation or reservation workflow again.
+
+Your task is ONLY to build a professional interactive restaurant floor plan.
+
+IMPORTANT
+
+- Do NOT modify the dashboards.
+- Do NOT modify employee roles.
+- Do NOT change the reservation queue.
+- Do NOT redesign the application.
+- Do NOT create placeholder components.
+- Fully implement every requested feature.
+- Keep the existing BoomClub dark theme and gold accent (#E3BE59).
+- Ensure the application builds successfully before finishing.
+
+--------------------------------------------------
+1. Build the Floor Plan
+--------------------------------------------------
+
+Replace the placeholder Floor Plan page with a complete interactive restaurant layout.
+
+The first thing displayed should be:
+
+Floor 1      Floor 2
+
+These should behave like tabs.
+
+Switching floors should be instant.
+
+Do not reload the page.
+
+Remember the selected floor.
+
+--------------------------------------------------
+2. Interactive Tables
+--------------------------------------------------
+
+Each table should be clickable.
+
+Each table should display:
+
+- Table Number
+- Capacity
+
+Use realistic table shapes.
+
+Examples:
+
+Round tables
+
+Square tables
+
+Large banquet tables
+
+Tables should be movable by Owners using drag and drop.
+
+Waiters should NOT be able to move tables.
+
+--------------------------------------------------
+3. Table Status Colors
+--------------------------------------------------
+
+Each table should have a clear status.
+
+Available
+
+Waiting For Guests
+
+Occupied
+
+Special Guest
+
+Out Of Service
+
+Use clearly different colors.
+
+Include a small legend on the page.
+
+--------------------------------------------------
+4. Clicking a Table
+--------------------------------------------------
+
+Clicking any table should open a modern modal.
+
+Display:
+
+Table Number
+
+Floor
+
+Capacity
+
+Current Status
+
+Current Guest (if assigned)
+
+Notes
+
+--------------------------------------------------
+5. Available Table Actions
+--------------------------------------------------
+
+If the table is Available show:
+
+Assign Reservation
+
+Reserve For Special Guest
+
+Mark Out Of Service
+
+Edit Notes
+
+--------------------------------------------------
+6. Waiting For Guests
+--------------------------------------------------
+
+Display:
+
+Customer Name
+
+Guest Count
+
+Phone Number
+
+Assigned Time
+
+Buttons:
+
+Mark Guests Seated
+
+Change Table
+
+View Reservation
+
+--------------------------------------------------
+7. Occupied
+--------------------------------------------------
+
+Display:
+
+Customer
+
+Guest Count
+
+Time Seated
+
+Assigned Waiter
+
+Buttons:
+
+Mark Table Available
+
+Move Guests
+
+View Reservation
+
+--------------------------------------------------
+8. Special Guest
+--------------------------------------------------
+
+Buttons:
+
+Edit Reservation
+
+Mark Guest Seated
+
+Remove Reservation
+
+Display:
+
+Guest Name
+
+Reason
+
+Reserved By
+
+Reserved Time
+
+Special Guest tables must NOT be assignable from the reservation queue.
+
+--------------------------------------------------
+9. Out Of Service
+--------------------------------------------------
+
+Display:
+
+Reason
+
+Disabled By
+
+Disabled Time
+
+Button:
+
+Return To Service
+
+--------------------------------------------------
+10. Owner Floor Editor
+--------------------------------------------------
+
+Owners should have an Edit Layout mode.
+
+When enabled:
+
+- Drag tables
+- Move tables
+- Add new tables
+- Delete tables
+- Change capacity
+- Change table numbers
+
+Include:
+
+Save Layout
+
+Cancel Changes
+
+Waiters must never see editing controls.
+
+--------------------------------------------------
+11. Animations
+--------------------------------------------------
+
+Use smooth animations.
+
+Hover effects.
+
+Modern shadows.
+
+Professional transitions.
+
+Everything should feel premium.
+
+--------------------------------------------------
+12. Responsiveness
+--------------------------------------------------
+
+The floor plan must work on:
+
+Desktop
+
+Laptop
+
+Tablet
+
+Maintain spacing and usability.
+
+--------------------------------------------------
+13. Final Verification
+--------------------------------------------------
+
+Before finishing:
+
+✓ Floor switching works.
+
+✓ Tables are clickable.
+
+✓ Table modal opens correctly.
+
+✓ Owner editing works.
+
+✓ Waiter editing is hidden.
+
+✓ No build errors.
+
+✓ No placeholder components remain.
+
+Do NOT implement backend logic yet.
+
+The UI should be fully complete and ready for backend integration.

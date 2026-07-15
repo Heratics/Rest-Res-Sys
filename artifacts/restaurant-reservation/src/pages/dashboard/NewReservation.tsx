@@ -20,7 +20,6 @@ export default function NewReservation() {
     name: "",
     phone: "",
     guests: "2",
-    specialRequests: "",
   });
 
   const set = (k: string, v: string) => {
@@ -45,7 +44,6 @@ export default function NewReservation() {
     const res = addReservation({
       customer: { id: `c_${Date.now()}`, name: form.name.trim(), phone: form.phone.trim() },
       guests: parseInt(form.guests),
-      specialRequests: form.specialRequests.trim() || undefined,
       status: "Pending",
     });
     setResult(res);
@@ -56,7 +54,7 @@ export default function NewReservation() {
   const reset = () => {
     setSubmitted(false);
     setResult(null);
-    setForm({ name: "", phone: "", guests: "2", specialRequests: "" });
+    setForm({ name: "", phone: "", guests: "2" });
     setErrors({});
   };
 
@@ -89,7 +87,7 @@ export default function NewReservation() {
                 { label: "Phone", value: result.customer.phone },
                 { label: "Guests", value: `${result.guests} ${result.guests === 1 ? "person" : "people"}` },
                 { label: "Confirmation", value: result.confirmationNumber },
-                ...(result.specialRequests ? [{ label: "Notes", value: result.specialRequests }] : []),
+  
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-center px-4 py-3 text-sm">
                   <span className="text-muted-foreground">{label}</span>
@@ -162,18 +160,6 @@ export default function NewReservation() {
                 onChange={(e) => set("guests", e.target.value)}
               />
               {errors.guests && <p className="text-xs text-destructive">{errors.guests}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Special Notes <span className="text-muted-foreground text-xs font-normal">(optional)</span></Label>
-              <textarea
-                id="notes"
-                rows={3}
-                value={form.specialRequests}
-                onChange={(e) => set("specialRequests", e.target.value)}
-                placeholder="Allergies, seating preferences, occasion..."
-                className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary resize-none"
-              />
             </div>
 
             <Button type="submit" size="lg" className="w-full mt-2" disabled={submitting}>
