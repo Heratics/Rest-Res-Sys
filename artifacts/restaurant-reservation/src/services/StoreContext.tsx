@@ -8,6 +8,8 @@ import {
   createReservation,
   Employee,
   mockEmployees,
+  FloorTable,
+  mockFloorTables,
 } from "./mockData";
 
 // ─── Session keys ───────────────────────────────────────────────────────────
@@ -63,6 +65,14 @@ export interface RestaurantState {
   updateTable: (id: string, status: Table["status"]) => void;
 }
 
+export interface FloorPlanState {
+  floorTables: FloorTable[];
+  updateFloorTable: (id: string, updates: Partial<FloorTable>) => void;
+  addFloorTable: (table: Omit<FloorTable, "id">) => void;
+  removeFloorTable: (id: string) => void;
+  saveFloorLayout: (tables: FloorTable[]) => void;
+}
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 export const StoreContext = createContext<{
   ownerAuth: OwnerAuthState;
@@ -70,6 +80,7 @@ export const StoreContext = createContext<{
   reservationStore: ReservationState;
   employeeStore: EmployeeStoreState;
   restaurantStore: RestaurantState;
+  floorPlanStore: FloorPlanState;
 } | null>(null);
 
 // ─── Session helpers ─────────────────────────────────────────────────────────
@@ -106,6 +117,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(restaurantSettings);
   const [tables, setTables] = useState<Table[]>(mockTables);
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
+  const [floorTables, setFloorTables] = useState<FloorTable[]>(mockFloorTables);
 
   // Sync sessions to localStorage
   useEffect(() => { saveSession(OWNER_SESSION_KEY, owner); }, [owner]);
@@ -175,9 +187,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setTables((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t))),
   };
 
+  // ── Floor Plan ──
+  const floorPlanStore: FloorPlanState = {
+    floorTables,
+    updateFloorTable: (id, updates) =>
+      setFloorTables((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t))),
+    addFloorTable: (table) =>
+      setFloorTables((prev) => [...prev, { ...table, id: `ft${table.floor}_${Date.now()}` }]),
+    removeFloorTable: (id) =>
+      setFloorTables((prev) => prev.filter((t) => t.id !== id)),
+    saveFloorLayout: (tables) => setFloorTables(tables),
+  };
+
   return (
     <StoreContext.Provider
-      value={{ ownerAuth, employeeAuth, reservationStore, employeeStore, restaurantStore }}
+      value={{ ownerAuth, employeeAuth, reservationStore, employeeStore, restaurantStore, floorPlanStore }}
     >
       {children}
     </StoreContext.Provider>
@@ -196,3 +220,4 @@ export const useEmployeeAuth = () => useStore().employeeAuth;
 export const useReservationStore = () => useStore().reservationStore;
 export const useEmployeeStore = () => useStore().employeeStore;
 export const useRestaurantStore = () => useStore().restaurantStore;
+export const useFloorPlanStore = () => useStore().floorPlanStore;

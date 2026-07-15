@@ -184,6 +184,120 @@ export const mockEmployees: Employee[] = [
   },
 ];
 
+// ─── Floor Plan Types ────────────────────────────────────────────────────────
+export type FloorTableStatus = "Available" | "Waiting" | "Occupied" | "Special" | "OutOfService";
+export type TableShape = "round" | "square" | "banquet";
+
+export interface FloorTable {
+  id: string;
+  number: string;
+  floor: 1 | 2;
+  shape: TableShape;
+  capacity: number;
+  status: FloorTableStatus;
+  x: number;
+  y: number;
+  reservationId?: string;
+  assignedWaiter?: string;
+  assignedAt?: string;
+  seatedAt?: string;
+  specialGuest?: { name: string; reason: string; reservedBy: string; reservedAt: string };
+  outOfService?: { reason: string; disabledBy: string; disabledAt: string };
+  notes?: string;
+}
+
+const _n = Date.now();
+export const mockFloorTables: FloorTable[] = [
+  // ── Floor 1 · Left Wing – Column A (x=55) ──────────────────────────────
+  { id:"ft1_01", number:"1",  floor:1, shape:"round",  capacity:4, status:"Available", x:55, y:65 },
+  { id:"ft1_02", number:"2",  floor:1, shape:"round",  capacity:2, status:"Available", x:55, y:145 },
+  { id:"ft1_03", number:"3",  floor:1, shape:"round",  capacity:4, status:"Occupied",  x:55, y:225, reservationId:"r2", seatedAt:new Date(_n-5400000).toISOString(), assignedWaiter:"Celine Dupont" },
+  { id:"ft1_04", number:"4",  floor:1, shape:"round",  capacity:2, status:"Available", x:55, y:305 },
+  { id:"ft1_05", number:"5",  floor:1, shape:"round",  capacity:4, status:"Waiting",   x:55, y:385, reservationId:"r1", assignedAt:new Date(_n-1800000).toISOString() },
+  { id:"ft1_06", number:"6",  floor:1, shape:"round",  capacity:2, status:"Available", x:55, y:465 },
+  { id:"ft1_07", number:"7",  floor:1, shape:"round",  capacity:4, status:"Available", x:55, y:545 },
+  { id:"ft1_08", number:"8",  floor:1, shape:"round",  capacity:2, status:"Available", x:55, y:625 },
+  // ── Floor 1 · Left Wing – Column B (x=145) ─────────────────────────────
+  { id:"ft1_09", number:"9",  floor:1, shape:"round",  capacity:4, status:"Available", x:145, y:105 },
+  { id:"ft1_10", number:"10", floor:1, shape:"round",  capacity:2, status:"Available", x:145, y:185 },
+  { id:"ft1_11", number:"11", floor:1, shape:"round",  capacity:4, status:"Available", x:145, y:265 },
+  { id:"ft1_12", number:"12", floor:1, shape:"round",  capacity:2, status:"Available", x:145, y:345 },
+  { id:"ft1_13", number:"13", floor:1, shape:"round",  capacity:4, status:"Available", x:145, y:425 },
+  { id:"ft1_14", number:"14", floor:1, shape:"round",  capacity:2, status:"Available", x:145, y:505 },
+  { id:"ft1_15", number:"15", floor:1, shape:"round",  capacity:4, status:"Available", x:145, y:585 },
+  // ── Floor 1 · Left Wing – Column C (x=235) ─────────────────────────────
+  { id:"ft1_16", number:"16", floor:1, shape:"square", capacity:6, status:"Special",   x:235, y:65,  specialGuest:{ name:"Tariq Al-Rashid", reason:"VIP Birthday", reservedBy:"Luca Moreau", reservedAt:new Date(_n-3600000).toISOString() } },
+  { id:"ft1_17", number:"17", floor:1, shape:"round",  capacity:4, status:"Available", x:235, y:155 },
+  { id:"ft1_18", number:"18", floor:1, shape:"square", capacity:4, status:"Available", x:235, y:245 },
+  { id:"ft1_19", number:"19", floor:1, shape:"round",  capacity:2, status:"Available", x:235, y:335 },
+  { id:"ft1_20", number:"20", floor:1, shape:"square", capacity:6, status:"Available", x:235, y:425 },
+  { id:"ft1_21", number:"21", floor:1, shape:"round",  capacity:4, status:"Available", x:235, y:515 },
+  { id:"ft1_22", number:"22", floor:1, shape:"square", capacity:4, status:"Available", x:235, y:605 },
+  { id:"ft1_23", number:"23", floor:1, shape:"round",  capacity:2, status:"Available", x:235, y:695 },
+  // ── Floor 1 · Right Wing – Column D (x=965) ────────────────────────────
+  { id:"ft1_24", number:"24", floor:1, shape:"round",  capacity:4, status:"Available",     x:965, y:65 },
+  { id:"ft1_25", number:"25", floor:1, shape:"square", capacity:8, status:"Occupied",       x:965, y:145, reservationId:"r7", seatedAt:new Date(_n-7200000).toISOString(), assignedWaiter:"Priya Sharma" },
+  { id:"ft1_26", number:"26", floor:1, shape:"round",  capacity:4, status:"Available",     x:965, y:225 },
+  { id:"ft1_27", number:"27", floor:1, shape:"round",  capacity:2, status:"Available",     x:965, y:305 },
+  { id:"ft1_28", number:"28", floor:1, shape:"round",  capacity:4, status:"Available",     x:965, y:385 },
+  { id:"ft1_29", number:"29", floor:1, shape:"round",  capacity:2, status:"OutOfService",  x:965, y:465, outOfService:{ reason:"Chair leg broken – maintenance needed", disabledBy:"Luca Moreau", disabledAt:new Date(_n-86400000).toISOString() } },
+  { id:"ft1_30", number:"30", floor:1, shape:"round",  capacity:4, status:"Available",     x:965, y:545 },
+  { id:"ft1_31", number:"31", floor:1, shape:"round",  capacity:2, status:"Available",     x:965, y:625 },
+  // ── Floor 1 · Right Wing – Column E (x=1055) ───────────────────────────
+  { id:"ft1_32", number:"32", floor:1, shape:"round",  capacity:4, status:"Available", x:1055, y:105 },
+  { id:"ft1_33", number:"33", floor:1, shape:"round",  capacity:2, status:"Available", x:1055, y:185 },
+  { id:"ft1_34", number:"34", floor:1, shape:"round",  capacity:4, status:"Available", x:1055, y:265 },
+  { id:"ft1_35", number:"35", floor:1, shape:"round",  capacity:2, status:"Available", x:1055, y:345 },
+  { id:"ft1_36", number:"36", floor:1, shape:"round",  capacity:4, status:"Available", x:1055, y:425 },
+  { id:"ft1_37", number:"37", floor:1, shape:"round",  capacity:2, status:"Available", x:1055, y:505 },
+  { id:"ft1_38", number:"38", floor:1, shape:"round",  capacity:4, status:"Available", x:1055, y:585 },
+  // ── Floor 1 · Right Wing – Column F (x=1145) ───────────────────────────
+  { id:"ft1_39", number:"39", floor:1, shape:"square", capacity:6, status:"Available", x:1145, y:65 },
+  { id:"ft1_40", number:"40", floor:1, shape:"round",  capacity:4, status:"Available", x:1145, y:155 },
+  { id:"ft1_41", number:"41", floor:1, shape:"square", capacity:4, status:"Available", x:1145, y:245 },
+  { id:"ft1_42", number:"42", floor:1, shape:"round",  capacity:2, status:"Available", x:1145, y:335 },
+  { id:"ft1_43", number:"43", floor:1, shape:"square", capacity:6, status:"Available", x:1145, y:425 },
+  { id:"ft1_44", number:"44", floor:1, shape:"round",  capacity:4, status:"Available", x:1145, y:515 },
+  { id:"ft1_45", number:"45", floor:1, shape:"square", capacity:4, status:"Available", x:1145, y:605 },
+  { id:"ft1_46", number:"46", floor:1, shape:"round",  capacity:2, status:"Available", x:1145, y:695 },
+  // ── Floor 1 · Front Row (y=28) ──────────────────────────────────────────
+  { id:"ft1_47", number:"47", floor:1, shape:"round",  capacity:2, status:"Occupied",  x:330, y:28, reservationId:"r4", seatedAt:new Date(_n-3600000).toISOString(), assignedWaiter:"Celine Dupont" },
+  { id:"ft1_48", number:"48", floor:1, shape:"round",  capacity:2, status:"Available", x:430, y:28 },
+  { id:"ft1_49", number:"49", floor:1, shape:"round",  capacity:2, status:"Available", x:530, y:28 },
+  { id:"ft1_50", number:"50", floor:1, shape:"round",  capacity:2, status:"Waiting",   x:600, y:28, reservationId:"r6", assignedAt:new Date(_n-900000).toISOString() },
+  { id:"ft1_51", number:"51", floor:1, shape:"round",  capacity:2, status:"Available", x:670, y:28 },
+  { id:"ft1_52", number:"52", floor:1, shape:"round",  capacity:2, status:"Available", x:770, y:28 },
+  { id:"ft1_53", number:"53", floor:1, shape:"round",  capacity:2, status:"Available", x:870, y:28 },
+  // ── Floor 1 · Back Wall Banquets (y=698) ────────────────────────────────
+  { id:"ft1_54", number:"54", floor:1, shape:"banquet", capacity:8,  status:"Available", x:330, y:698 },
+  { id:"ft1_55", number:"55", floor:1, shape:"banquet", capacity:10, status:"Available", x:490, y:698 },
+  { id:"ft1_56", number:"56", floor:1, shape:"banquet", capacity:10, status:"Available", x:650, y:698 },
+  { id:"ft1_57", number:"57", floor:1, shape:"banquet", capacity:8,  status:"Available", x:810, y:698 },
+  { id:"ft1_58", number:"58", floor:1, shape:"banquet", capacity:8,  status:"Available", x:930, y:698 },
+  // ── Floor 1 · VIP Side Spots ────────────────────────────────────────────
+  { id:"ft1_59", number:"59", floor:1, shape:"square",  capacity:6,  status:"Available", x:330, y:625 },
+  { id:"ft1_60", number:"60", floor:1, shape:"square",  capacity:6,  status:"Available", x:870, y:625 },
+
+  // ── Floor 2 · Ring of 17 (center 450,380 radius 250) ───────────────────
+  { id:"ft2_01", number:"201", floor:2, shape:"round",  capacity:4, status:"Available", x:450, y:130 },
+  { id:"ft2_02", number:"202", floor:2, shape:"round",  capacity:4, status:"Available", x:540, y:147 },
+  { id:"ft2_03", number:"203", floor:2, shape:"round",  capacity:4, status:"Available", x:618, y:195 },
+  { id:"ft2_04", number:"204", floor:2, shape:"square", capacity:6, status:"Available", x:674, y:269 },
+  { id:"ft2_05", number:"205", floor:2, shape:"round",  capacity:4, status:"Available", x:699, y:357 },
+  { id:"ft2_06", number:"206", floor:2, shape:"round",  capacity:4, status:"Occupied",  x:690, y:448, reservationId:"r3", seatedAt:new Date(_n-2700000).toISOString(), assignedWaiter:"Priya Sharma" },
+  { id:"ft2_07", number:"207", floor:2, shape:"square", capacity:6, status:"Available", x:650, y:530 },
+  { id:"ft2_08", number:"208", floor:2, shape:"round",  capacity:4, status:"Available", x:581, y:593 },
+  { id:"ft2_09", number:"209", floor:2, shape:"round",  capacity:4, status:"Available", x:496, y:626 },
+  { id:"ft2_10", number:"210", floor:2, shape:"round",  capacity:4, status:"Available", x:404, y:626 },
+  { id:"ft2_11", number:"211", floor:2, shape:"round",  capacity:4, status:"Available", x:319, y:593 },
+  { id:"ft2_12", number:"212", floor:2, shape:"square", capacity:6, status:"Special",   x:250, y:530, specialGuest:{ name:"Nora Al-Farsi", reason:"Corporate Event", reservedBy:"Luca Moreau", reservedAt:new Date(_n-7200000).toISOString() } },
+  { id:"ft2_13", number:"213", floor:2, shape:"round",  capacity:4, status:"Available", x:210, y:448 },
+  { id:"ft2_14", number:"214", floor:2, shape:"round",  capacity:4, status:"Waiting",   x:201, y:357, reservationId:"r4", assignedAt:new Date(_n-600000).toISOString() },
+  { id:"ft2_15", number:"215", floor:2, shape:"square", capacity:6, status:"Available", x:226, y:269 },
+  { id:"ft2_16", number:"216", floor:2, shape:"round",  capacity:4, status:"Available", x:282, y:195 },
+  { id:"ft2_17", number:"217", floor:2, shape:"round",  capacity:4, status:"Available", x:360, y:147 },
+];
+
 export const updateReservation = (id: string, updates: Partial<Reservation>) => {
   mockReservations = mockReservations.map((res) =>
     res.id === id ? { ...res, ...updates } : res
