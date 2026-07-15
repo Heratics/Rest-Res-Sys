@@ -1,0 +1,70 @@
+Let me explore the current codebase first to understand what exists.
+
+
+3 actions
+Let me read the key files I need before rewriting everything.
+
+
+7 actions
+Let me read the remaining files I need before writing everything.
+
+
+3 actions
+Now I have everything I need. This is a large architectural change — I'll execute it in parallel batches. Starting with the data layer and core pages simultaneously.
+
+
+9 actions
+Good — the old pages are erroring because they reference removed types. I'll now write all new/updated pages, layouts, and routes in one parallel batch, then delete all the old files.
+
+
+13 actions
+Now deleting all the old unused files in parallel.
+
+
+3 actions
+The browser has an old GuestsPage cached from HMR. The file is deleted and no longer imported — a workflow restart will flush it.
+
+
+4 actions
+Clean build — no errors. Let me verify the key pages visually.
+
+
+3 actions
+Let me screenshot the key authenticated pages to verify everything works end-to-end.
+
+
+3 actions
+Everything is clean — all pages build without errors and route guards are working correctly (unauthenticated visits to /employee and /owner correctly redirect to their login pages).
+
+Here's a full summary of what was changed:
+
+Removed completely
+
+QR codes, QR ticket, QR scanner, QR validation (all pages, imports, components)
+Payment method section (CliQ, Pay Upon Arrival)
+Date and time selectors from reservation creation
+GuestsPage, QrScanner, Payments, TicketPage, Calendar, Tables, Reservations (old), Reserve, MyReservation, DashboardLayout, QrDisplay
+New roles: Owner · Doorman · Waiter
+
+EmployeeRole updated across the data layer and Employees management page
+Employee login hint shows amara.d (Doorman) and celine.d (Waiter)
+After login, role is detected and the right dashboard + sidebar is shown automatically
+Reservation form (Doorman only)
+
+Now contains: Customer Name, Phone Number, Guest Count, Special Notes (optional)
+Success screen shows confirmation details + "Return to Queue" and "New Reservation" buttons
+Redesigned Reservations page
+
+Left panel: live queue with tabs (Incoming / Waiting / Checked In / Cancelled / All), search, reservation cards with Seat + Cancel actions
+Right panel: empty floor plan placeholder ("No floor plan has been implemented yet.")
+New Doorman Dashboard — Create Reservation CTA, live queue with seat/cancel actions, search, recent history
+
+New Waiter Dashboard — Incoming/Waiting/Seated/Tables stats, incoming reservations list, assigned + occupied tables, recent activity
+
+Floor Plan page — Placeholder "Floor Plan Coming Next" wired into all sidebars
+
+Navigation per role
+
+Owner portal: Dashboard, Reservations, Floor Plan, Employees, Settings
+Doorman: Dashboard, New Reservation, Reservations, Floor Plan
+Waiter: Dashboard, Reservations, Floor Plan

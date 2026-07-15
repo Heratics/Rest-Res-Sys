@@ -41,7 +41,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <footer className="relative z-10 border-t border-white/5 py-12 text-center text-muted-foreground bg-card">
         <div className="container mx-auto px-6">
           <p className="font-serif text-xl text-primary mb-4">BOOMCLUB</p>
-          <p className="text-sm mb-8">14 Rue de Rivoli, 75001 Paris</p>
+          <p className="text-sm mb-8">6th Circle, Amman, Jordan</p>
           <div className="flex justify-center gap-6 text-sm flex-wrap">
             <Link
               href="/owner-login"

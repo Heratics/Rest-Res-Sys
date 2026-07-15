@@ -122,9 +122,9 @@ export const mockTables: Table[] = [
 
 export const restaurantSettings = {
   name: "BOOMCLUB",
-  phone: "+962 790022006",
-  address: "6th Cir., Amman",
-  openingHours: "Tue-Mon, 22:00 - 03:30",
+  phone: "+962 79 002 2006",
+  address: "6th Circle, Amman, Jordan",
+  openingHours: "Tue – Mon, 22:00 – 03:30",
 };
 
 export const mockEmployees: Employee[] = [
