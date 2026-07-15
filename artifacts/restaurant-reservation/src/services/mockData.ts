@@ -1,4 +1,4 @@
-export type ReservationStatus = "Pending" | "Confirmed" | "Checked In" | "Cancelled";
+export type ReservationStatus = "Pending" | "Confirmed" | "Checked In" | "Seated" | "Completed" | "Cancelled";
 export type EmployeeRole = "Owner" | "Doorman" | "Waiter";
 export type EmployeeStatus = "Active" | "Inactive";
 
@@ -51,7 +51,7 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[0],
     guests: 2,
     specialRequests: "Window seat preferred. Anniversary dinner.",
-    status: "Confirmed",
+    status: "Checked In",          // table assigned (ft1_05 Waiting)
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
@@ -59,7 +59,7 @@ export let mockReservations: Reservation[] = [
     confirmationNumber: "#AUR-0472",
     customer: mockCustomers[1],
     guests: 4,
-    status: "Checked In",
+    status: "Seated",               // guests seated (ft1_03 Occupied)
     createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
   },
   {
@@ -68,7 +68,7 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[2],
     guests: 2,
     specialRequests: "Nut allergy — please inform kitchen.",
-    status: "Pending",
+    status: "Pending",              // incoming, no table yet
     createdAt: new Date(Date.now() - 3600000 * 0.5).toISOString(),
   },
   {
@@ -77,7 +77,7 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[3],
     guests: 6,
     specialRequests: "Vegan options needed for 2 guests.",
-    status: "Confirmed",
+    status: "Pending",              // incoming, no table yet
     createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
   },
   {
@@ -93,7 +93,7 @@ export let mockReservations: Reservation[] = [
     confirmationNumber: "#AUR-0476",
     customer: mockCustomers[0],
     guests: 2,
-    status: "Pending",
+    status: "Checked In",           // table assigned (ft1_50 Waiting)
     createdAt: new Date(Date.now() - 600000).toISOString(),
   },
   {
@@ -102,7 +102,7 @@ export let mockReservations: Reservation[] = [
     customer: mockCustomers[1],
     guests: 8,
     specialRequests: "Birthday cake prepared in advance.",
-    status: "Confirmed",
+    status: "Seated",               // guests seated (ft1_25 Occupied)
     createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
   },
 ];
@@ -261,7 +261,7 @@ export const mockFloorTables: FloorTable[] = [
   { id:"ft1_45", number:"45", floor:1, shape:"square", capacity:4, status:"Available", x:1145, y:605 },
   { id:"ft1_46", number:"46", floor:1, shape:"round",  capacity:2, status:"Available", x:1145, y:695 },
   // ── Floor 1 · Front Row (y=28) ──────────────────────────────────────────
-  { id:"ft1_47", number:"47", floor:1, shape:"round",  capacity:2, status:"Occupied",  x:330, y:28, reservationId:"r4", seatedAt:new Date(_n-3600000).toISOString(), assignedWaiter:"Celine Dupont" },
+  { id:"ft1_47", number:"47", floor:1, shape:"round",  capacity:2, status:"Available", x:330, y:28 },
   { id:"ft1_48", number:"48", floor:1, shape:"round",  capacity:2, status:"Available", x:430, y:28 },
   { id:"ft1_49", number:"49", floor:1, shape:"round",  capacity:2, status:"Available", x:530, y:28 },
   { id:"ft1_50", number:"50", floor:1, shape:"round",  capacity:2, status:"Waiting",   x:600, y:28, reservationId:"r6", assignedAt:new Date(_n-900000).toISOString() },
@@ -284,7 +284,7 @@ export const mockFloorTables: FloorTable[] = [
   { id:"ft2_03", number:"203", floor:2, shape:"round",  capacity:4, status:"Available", x:618, y:195 },
   { id:"ft2_04", number:"204", floor:2, shape:"square", capacity:6, status:"Available", x:674, y:269 },
   { id:"ft2_05", number:"205", floor:2, shape:"round",  capacity:4, status:"Available", x:699, y:357 },
-  { id:"ft2_06", number:"206", floor:2, shape:"round",  capacity:4, status:"Occupied",  x:690, y:448, reservationId:"r3", seatedAt:new Date(_n-2700000).toISOString(), assignedWaiter:"Priya Sharma" },
+  { id:"ft2_06", number:"206", floor:2, shape:"round",  capacity:4, status:"Available", x:690, y:448 },
   { id:"ft2_07", number:"207", floor:2, shape:"square", capacity:6, status:"Available", x:650, y:530 },
   { id:"ft2_08", number:"208", floor:2, shape:"round",  capacity:4, status:"Available", x:581, y:593 },
   { id:"ft2_09", number:"209", floor:2, shape:"round",  capacity:4, status:"Available", x:496, y:626 },
@@ -292,7 +292,7 @@ export const mockFloorTables: FloorTable[] = [
   { id:"ft2_11", number:"211", floor:2, shape:"round",  capacity:4, status:"Available", x:319, y:593 },
   { id:"ft2_12", number:"212", floor:2, shape:"square", capacity:6, status:"Special",   x:250, y:530, specialGuest:{ name:"Nora Al-Farsi", reason:"Corporate Event", reservedBy:"Luca Moreau", reservedAt:new Date(_n-7200000).toISOString() } },
   { id:"ft2_13", number:"213", floor:2, shape:"round",  capacity:4, status:"Available", x:210, y:448 },
-  { id:"ft2_14", number:"214", floor:2, shape:"round",  capacity:4, status:"Waiting",   x:201, y:357, reservationId:"r4", assignedAt:new Date(_n-600000).toISOString() },
+  { id:"ft2_14", number:"214", floor:2, shape:"round",  capacity:4, status:"Available", x:201, y:357 },
   { id:"ft2_15", number:"215", floor:2, shape:"square", capacity:6, status:"Available", x:226, y:269 },
   { id:"ft2_16", number:"216", floor:2, shape:"round",  capacity:4, status:"Available", x:282, y:195 },
   { id:"ft2_17", number:"217", floor:2, shape:"round",  capacity:4, status:"Available", x:360, y:147 },

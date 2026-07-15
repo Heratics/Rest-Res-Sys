@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import {
   Reservation,
+  ReservationStatus,
   mockReservations,
   Table,
   mockTables,
@@ -11,6 +12,16 @@ import {
   FloorTable,
   mockFloorTables,
 } from "./mockData";
+
+// ─── Workflow Types ───────────────────────────────────────────────────────────
+export interface PendingTableAssignment {
+  reservation: Reservation;
+  isMove: boolean;
+  /** Only set when isMove=true: the table being vacated. */
+  oldTableId?: string;
+  /** Status of the reservation at the time the move was initiated. */
+  prevReservationStatus?: "Checked In" | "Seated";
+}
 
 // ─── Session keys ───────────────────────────────────────────────────────────
 const OWNER_SESSION_KEY = "BOOMCLUB_owner_session";
@@ -73,6 +84,13 @@ export interface FloorPlanState {
   saveFloorLayout: (tables: FloorTable[]) => void;
 }
 
+export interface WorkflowState {
+  pendingTableAssignment: PendingTableAssignment | null;
+  setPendingTableAssignment: (v: PendingTableAssignment | null) => void;
+  lastNewReservation: Reservation | null;
+  clearLastNewReservation: () => void;
+}
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 export const StoreContext = createContext<{
   ownerAuth: OwnerAuthState;
@@ -81,6 +99,7 @@ export const StoreContext = createContext<{
   employeeStore: EmployeeStoreState;
   restaurantStore: RestaurantState;
   floorPlanStore: FloorPlanState;
+  workflowState: WorkflowState;
 } | null>(null);
 
 // ─── Session helpers ─────────────────────────────────────────────────────────
@@ -118,6 +137,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [tables, setTables] = useState<Table[]>(mockTables);
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [floorTables, setFloorTables] = useState<FloorTable[]>(mockFloorTables);
+  const [pendingTableAssignment, setPendingTableAssignment] = useState<PendingTableAssignment | null>(null);
+  const [lastNewReservation, setLastNewReservation] = useState<Reservation | null>(null);
 
   // Sync sessions to localStorage
   useEffect(() => { saveSession(OWNER_SESSION_KEY, owner); }, [owner]);
@@ -158,6 +179,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addReservation: (data) => {
       const newRes = createReservation(data);
       setReservations((prev) => [newRes, ...prev]);
+      setLastNewReservation(newRes);
       return newRes;
     },
   };
@@ -199,9 +221,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     saveFloorLayout: (tables) => setFloorTables(tables),
   };
 
+  // ── Workflow ──
+  const workflowState: WorkflowState = {
+    pendingTableAssignment,
+    setPendingTableAssignment,
+    lastNewReservation,
+    clearLastNewReservation: () => setLastNewReservation(null),
+  };
+
   return (
     <StoreContext.Provider
-      value={{ ownerAuth, employeeAuth, reservationStore, employeeStore, restaurantStore, floorPlanStore }}
+      value={{ ownerAuth, employeeAuth, reservationStore, employeeStore, restaurantStore, floorPlanStore, workflowState }}
     >
       {children}
     </StoreContext.Provider>
@@ -221,3 +251,4 @@ export const useReservationStore = () => useStore().reservationStore;
 export const useEmployeeStore = () => useStore().employeeStore;
 export const useRestaurantStore = () => useStore().restaurantStore;
 export const useFloorPlanStore = () => useStore().floorPlanStore;
+export const useWorkflowStore = () => useStore().workflowState;

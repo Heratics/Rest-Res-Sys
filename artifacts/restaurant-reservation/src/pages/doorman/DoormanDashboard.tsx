@@ -7,22 +7,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useReservationStore } from "@/services/reservationStore";
 import { useEmployeeAuth } from "@/services/authStore";
 import { Reservation } from "@/services/mockData";
+import { isIncoming } from "@/services/reservationOperations";
 import {
-  CalendarPlus, Search, Users, Clock, CheckCircle2, Ban, History,
+  CalendarPlus, Search, Users, Clock, Ban, History,
 } from "lucide-react";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
   Pending:      "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  Confirmed:    "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "Checked In": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  Confirmed:    "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  "Checked In": "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  Seated:       "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  Completed:    "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
   Cancelled:    "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  Pending: "Incoming",
-  Confirmed: "Waiting",
-  "Checked In": "Seated",
-  Cancelled: "Cancelled",
+  Pending:      "Incoming",
+  Confirmed:    "Incoming",
+  "Checked In": "Assigned",
+  Seated:       "Seated",
+  Completed:    "Completed",
+  Cancelled:    "Cancelled",
 };
 
 function timeAgo(iso: string) {
@@ -39,14 +46,19 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 }
 
-function QueueCard({ res, onSeat, onCancel, confirmId, setConfirmId }: {
+// ─── Queue Card ───────────────────────────────────────────────────────────────
+// Doorman can only CANCEL reservations — table assignment is the waiter's job.
+
+function QueueCard({ res, onCancel, confirmId, setConfirmId }: {
   res: Reservation;
-  onSeat: () => void;
   onCancel: () => void;
   confirmId: string | null;
   setConfirmId: (id: string | null) => void;
 }) {
   const isConfirming = confirmId === res.id;
+  const canCancel = res.status !== "Cancelled" && res.status !== "Checked In"
+    && res.status !== "Seated" && res.status !== "Completed";
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
@@ -59,39 +71,40 @@ function QueueCard({ res, onSeat, onCancel, confirmId, setConfirmId }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="font-medium text-white">{res.customer.name}</p>
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status]}`}>
-            {STATUS_LABEL[res.status]}
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status] ?? STATUS_STYLES.Pending}`}>
+            {STATUS_LABEL[res.status] ?? res.status}
           </span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
           <span className="flex items-center gap-1"><Users className="w-3 h-3" />{res.guests} guests</span>
           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(res.createdAt)}</span>
-          {res.specialRequests && <span className="truncate max-w-[140px] text-muted-foreground/60">"{res.specialRequests}"</span>}
+          {res.specialRequests && (
+            <span className="truncate max-w-[140px] text-muted-foreground/60">"{res.specialRequests}"</span>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        {(res.status === "Pending" || res.status === "Confirmed") && (
-          <button onClick={onSeat}
-            className="p-1.5 rounded-lg text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-            title="Seat guest">
-            <CheckCircle2 className="w-4 h-4" />
-          </button>
-        )}
-        {res.status !== "Cancelled" && res.status !== "Checked In" && !isConfirming && (
-          <button onClick={() => setConfirmId(res.id)}
+        {canCancel && !isConfirming && (
+          <button
+            onClick={() => setConfirmId(res.id)}
             className="p-1.5 rounded-lg text-red-400/50 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            title="Cancel reservation">
+            title="Cancel reservation"
+          >
             <Ban className="w-4 h-4" />
           </button>
         )}
         {isConfirming && (
           <>
-            <button onClick={onCancel}
-              className="px-2 py-1 rounded text-xs bg-destructive text-white font-medium">
+            <button
+              onClick={onCancel}
+              className="px-2 py-1 rounded text-xs bg-destructive text-white font-medium"
+            >
               Confirm
             </button>
-            <button onClick={() => setConfirmId(null)}
-              className="px-2 py-1 rounded text-xs border border-border text-muted-foreground">
+            <button
+              onClick={() => setConfirmId(null)}
+              className="px-2 py-1 rounded text-xs border border-border text-muted-foreground"
+            >
               No
             </button>
           </>
@@ -100,6 +113,8 @@ function QueueCard({ res, onSeat, onCancel, confirmId, setConfirmId }: {
     </motion.div>
   );
 }
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function DoormanDashboard() {
   const { employee } = useEmployeeAuth();
@@ -110,23 +125,23 @@ export default function DoormanDashboard() {
   const queue = useMemo(() => {
     const q = search.toLowerCase();
     return reservations
-      .filter((r) => (r.status === "Pending" || r.status === "Confirmed") &&
+      .filter((r) => isIncoming(r) &&
         (!q || r.customer.name.toLowerCase().includes(q) || r.customer.phone.includes(q)))
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }, [reservations, search]);
 
   const history = useMemo(() =>
     reservations
-      .filter((r) => r.status === "Checked In" || r.status === "Cancelled")
+      .filter((r) => !isIncoming(r))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 8),
     [reservations]
   );
 
   const stats = useMemo(() => ({
-    pending:   reservations.filter((r) => r.status === "Pending").length,
-    confirmed: reservations.filter((r) => r.status === "Confirmed").length,
-    seated:    reservations.filter((r) => r.status === "Checked In").length,
+    incoming:  reservations.filter(isIncoming).length,
+    assigned:  reservations.filter((r) => r.status === "Checked In").length,
+    seated:    reservations.filter((r) => r.status === "Seated").length,
   }), [reservations]);
 
   return (
@@ -150,9 +165,9 @@ export default function DoormanDashboard() {
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Incoming", value: stats.pending,   color: "text-amber-400",   bg: "bg-amber-400/10" },
-          { label: "Waiting",  value: stats.confirmed, color: "text-blue-400",    bg: "bg-blue-400/10" },
-          { label: "Seated",   value: stats.seated,    color: "text-emerald-400", bg: "bg-emerald-400/10" },
+          { label: "Incoming", value: stats.incoming, color: "text-amber-400",   bg: "bg-amber-400/10" },
+          { label: "Assigned", value: stats.assigned, color: "text-blue-400",    bg: "bg-blue-400/10" },
+          { label: "Seated",   value: stats.seated,   color: "text-emerald-400", bg: "bg-emerald-400/10" },
         ].map((s) => (
           <Card key={s.label} className="border-white/5">
             <CardContent className="p-4 flex flex-col items-center text-center">
@@ -168,7 +183,7 @@ export default function DoormanDashboard() {
         <div className="p-5 border-b border-white/5">
           <div className="flex items-center justify-between gap-4 mb-4">
             <h2 className="font-serif text-xl text-white">Reservation Queue</h2>
-            <span className="text-xs text-muted-foreground">{queue.length} active</span>
+            <span className="text-xs text-muted-foreground">{queue.length} incoming</span>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -191,7 +206,6 @@ export default function DoormanDashboard() {
               <QueueCard
                 key={res.id}
                 res={res}
-                onSeat={() => updateStatus(res.id, "Checked In")}
                 onCancel={() => { updateStatus(res.id, "Cancelled"); setConfirmId(null); }}
                 confirmId={confirmId}
                 setConfirmId={setConfirmId}
@@ -218,8 +232,8 @@ export default function DoormanDashboard() {
                   <p className="text-sm text-white/70 truncate">{res.customer.name}</p>
                   <p className="text-xs text-muted-foreground">{res.guests} guests · {timeAgo(res.createdAt)}</p>
                 </div>
-                <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status]}`}>
-                  {STATUS_LABEL[res.status]}
+                <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status] ?? STATUS_STYLES.Pending}`}>
+                  {STATUS_LABEL[res.status] ?? res.status}
                 </span>
               </div>
             ))}

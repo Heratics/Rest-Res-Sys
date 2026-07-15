@@ -1,42 +1,42 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useReservationStore } from "@/services/reservationStore";
+import { useOwnerAuth } from "@/services/authStore";
+import { useEmployeeAuth } from "@/services/StoreContext";
+import { useWorkflowStore } from "@/services/workflowStore";
 import { Reservation, ReservationStatus } from "@/services/mockData";
+import { isIncoming } from "@/services/reservationOperations";
 import {
-  Search, CheckCircle2, Ban, X, Users, Clock, Map,
-  Eye, CalendarPlus,
+  Search, Ban, X, Users, Clock, Map,
+  Eye, CalendarPlus, MapPin, ArrowRight,
 } from "lucide-react";
 import { Link } from "wouter";
 
 // ─── Types & Constants ────────────────────────────────────────────────────────
 
-type Tab = "Incoming" | "Waiting" | "Checked In" | "Cancelled" | "All";
+type Tab = "Incoming" | "Assigned" | "Seated" | "Completed" | "Cancelled" | "All";
+const TABS: Tab[] = ["Incoming", "Assigned", "Seated", "Completed", "Cancelled", "All"];
 
-const TABS: Tab[] = ["Incoming", "Waiting", "Checked In", "Cancelled", "All"];
-
-const TAB_STATUS: Record<Tab, ReservationStatus | null> = {
-  Incoming: "Pending",
-  Waiting: "Confirmed",
-  "Checked In": "Checked In",
-  Cancelled: "Cancelled",
-  All: null,
-};
-
-const STATUS_STYLES: Record<ReservationStatus, string> = {
+const STATUS_STYLES: Record<string, string> = {
   Pending:      "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  Confirmed:    "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "Checked In": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  Confirmed:    "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  "Checked In": "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  Seated:       "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  Completed:    "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
   Cancelled:    "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
-const STATUS_LABEL: Record<ReservationStatus, string> = {
-  Pending: "Incoming",
-  Confirmed: "Waiting",
-  "Checked In": "Seated",
-  Cancelled: "Cancelled",
+const STATUS_LABEL: Record<string, string> = {
+  Pending:      "Incoming",
+  Confirmed:    "Incoming",
+  "Checked In": "Assigned",
+  Seated:       "Seated",
+  Completed:    "Completed",
+  Cancelled:    "Cancelled",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -55,26 +55,39 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 }
 
+function matchesTab(r: Reservation, tab: Tab): boolean {
+  if (tab === "All") return true;
+  if (tab === "Incoming")  return isIncoming(r);
+  if (tab === "Assigned")  return r.status === "Checked In";
+  if (tab === "Seated")    return r.status === "Seated";
+  if (tab === "Completed") return r.status === "Completed";
+  if (tab === "Cancelled") return r.status === "Cancelled";
+  return false;
+}
+
 // ─── Reservation Card ─────────────────────────────────────────────────────────
 
 function ReservationCard({
   res,
-  onCheckIn,
+  canAssignTable,
+  onChooseTable,
   onCancel,
   onView,
   confirmCancelId,
   setConfirmCancelId,
 }: {
   res: Reservation;
-  onCheckIn: () => void;
+  canAssignTable: boolean;
+  onChooseTable: () => void;
   onCancel: () => void;
   onView: () => void;
   confirmCancelId: string | null;
   setConfirmCancelId: (id: string | null) => void;
 }) {
-  const canCheckIn = res.status === "Pending" || res.status === "Confirmed";
-  const canCancel = res.status !== "Cancelled" && res.status !== "Checked In";
+  const canCancel = res.status !== "Cancelled" && res.status !== "Completed"
+    && res.status !== "Seated" && res.status !== "Checked In";
   const isConfirmingCancel = confirmCancelId === res.id;
+  const showChooseTable = canAssignTable && isIncoming(res);
 
   return (
     <motion.div
@@ -96,8 +109,8 @@ function ReservationCard({
               <p className="font-medium text-white truncate">{res.customer.name}</p>
               <p className="text-xs text-muted-foreground font-mono">{res.confirmationNumber}</p>
             </div>
-            <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status]}`}>
-              {STATUS_LABEL[res.status]}
+            <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status] ?? STATUS_STYLES.Pending}`}>
+              {STATUS_LABEL[res.status] ?? res.status}
             </span>
           </div>
 
@@ -118,10 +131,11 @@ function ReservationCard({
               className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-muted-foreground hover:text-white hover:bg-white/5 border border-border transition-all">
               <Eye className="w-3 h-3" /> View
             </button>
-            {canCheckIn && (
-              <button onClick={onCheckIn}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20 transition-all">
-                <CheckCircle2 className="w-3 h-3" /> Seat
+            {showChooseTable && (
+              <button onClick={onChooseTable}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-primary/90 hover:bg-primary text-black transition-all">
+                <MapPin className="w-3 h-3" /> Choose Table
+                <ArrowRight className="w-3 h-3" />
               </button>
             )}
             {canCancel && !isConfirmingCancel && (
@@ -175,16 +189,17 @@ function DetailModal({ res, onClose }: { res: Reservation; onClose: () => void }
                 <p className="font-medium text-white">{res.customer.name}</p>
                 <p className="text-sm text-muted-foreground">{res.customer.phone}</p>
               </div>
-              <span className={`ml-auto shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status]}`}>
-                {STATUS_LABEL[res.status]}
+              <span className={`ml-auto shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[res.status] ?? STATUS_STYLES.Pending}`}>
+                {STATUS_LABEL[res.status] ?? res.status}
               </span>
             </div>
 
             <div className="bg-black/30 rounded-xl border border-white/5 divide-y divide-white/5">
               {[
                 { label: "Confirmation", value: res.confirmationNumber },
-                { label: "Guests", value: `${res.guests}` },
-                { label: "Added", value: timeAgo(res.createdAt) },
+                { label: "Guests",       value: `${res.guests}` },
+                { label: "Phone",        value: res.customer.phone },
+                { label: "Added",        value: timeAgo(res.createdAt) },
                 ...(res.specialRequests ? [{ label: "Notes", value: res.specialRequests }] : []),
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-start px-4 py-3 text-sm gap-4">
@@ -207,41 +222,50 @@ function DetailModal({ res, onClose }: { res: Reservation; onClose: () => void }
 
 export default function ReservationsPage() {
   const { reservations, updateStatus } = useReservationStore();
+  const { isAuthenticated: isOwner } = useOwnerAuth();
+  const { employee } = useEmployeeAuth();
+  const { setPendingTableAssignment } = useWorkflowStore();
+  const [, navigate] = useLocation();
+
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("Incoming");
   const [viewRes, setViewRes] = useState<Reservation | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
 
+  const isWaiter = employee?.role === "Waiter";
+  // Owner and Waiter can assign tables; Doorman cannot
+  const canAssignTable = isOwner || isWaiter;
+
   const counts = useMemo(() => {
-    const pending   = reservations.filter((r) => r.status === "Pending").length;
-    const confirmed = reservations.filter((r) => r.status === "Confirmed").length;
-    const checkedIn = reservations.filter((r) => r.status === "Checked In").length;
-    const cancelled = reservations.filter((r) => r.status === "Cancelled").length;
-    return { pending, confirmed, checkedIn, cancelled, all: reservations.length };
+    const c: Record<Tab, number> = {
+      Incoming:  reservations.filter(isIncoming).length,
+      Assigned:  reservations.filter((r) => r.status === "Checked In").length,
+      Seated:    reservations.filter((r) => r.status === "Seated").length,
+      Completed: reservations.filter((r) => r.status === "Completed").length,
+      Cancelled: reservations.filter((r) => r.status === "Cancelled").length,
+      All:       reservations.length,
+    };
+    return c;
   }, [reservations]);
 
-  const TAB_COUNTS: Record<Tab, number> = {
-    Incoming: counts.pending,
-    Waiting: counts.confirmed,
-    "Checked In": counts.checkedIn,
-    Cancelled: counts.cancelled,
-    All: counts.all,
-  };
-
   const filtered = useMemo(() => {
-    const statusFilter = TAB_STATUS[activeTab];
     return reservations.filter((r) => {
-      const matchesTab = !statusFilter || r.status === statusFilter;
+      if (!matchesTab(r, activeTab)) return false;
       const q = search.toLowerCase();
-      const matchesSearch = !q ||
+      return !q ||
         r.customer.name.toLowerCase().includes(q) ||
         r.customer.phone.includes(q) ||
         r.confirmationNumber.toLowerCase().includes(q);
-      return matchesTab && matchesSearch;
     });
   }, [reservations, activeTab, search]);
 
-  const handleCheckIn = (r: Reservation) => updateStatus(r.id, "Checked In");
+  const handleChooseTable = (res: Reservation) => {
+    setPendingTableAssignment({ reservation: res, isMove: false });
+    // Navigate to floor plan (works from both /owner and /employee paths)
+    const base = isOwner ? "/owner" : "/employee";
+    navigate(`${base}/floor-plan`);
+  };
+
   const handleCancel = (id: string) => {
     updateStatus(id, "Cancelled");
     setConfirmCancelId(null);
@@ -255,7 +279,9 @@ export default function ReservationsPage() {
         <div className="flex items-center justify-between mb-4 shrink-0">
           <div>
             <h1 className="font-serif text-2xl text-white">Reservation Queue</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{counts.pending + counts.confirmed} active</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {counts.Incoming} incoming · {counts.Assigned} assigned · {counts.Seated} seated
+            </p>
           </div>
           <Link href="../new-reservation">
             <Button size="sm" className="gap-1.5 text-xs">
@@ -288,7 +314,7 @@ export default function ReservationsPage() {
               }`}
             >
               {tab}
-              <span className="ml-1.5 opacity-60">{TAB_COUNTS[tab]}</span>
+              <span className="ml-1.5 opacity-60">{counts[tab]}</span>
             </button>
           ))}
         </div>
@@ -305,7 +331,8 @@ export default function ReservationsPage() {
                 <ReservationCard
                   key={res.id}
                   res={res}
-                  onCheckIn={() => handleCheckIn(res)}
+                  canAssignTable={canAssignTable}
+                  onChooseTable={() => handleChooseTable(res)}
                   onCancel={() => handleCancel(res.id)}
                   onView={() => setViewRes(res)}
                   confirmCancelId={confirmCancelId}
@@ -317,16 +344,21 @@ export default function ReservationsPage() {
         </div>
       </div>
 
-      {/* ── RIGHT: Floor Plan Placeholder ── */}
+      {/* ── RIGHT: Floor Plan link ── */}
       <div className="hidden md:flex flex-1 flex-col">
         <Card className="flex-1 border-white/5 border-dashed flex flex-col items-center justify-center text-center p-12">
           <div className="w-16 h-16 rounded-2xl bg-white/3 border border-white/10 flex items-center justify-center mb-6">
             <Map className="w-8 h-8 text-white/20" />
           </div>
-          <h3 className="font-serif text-xl text-white/30 mb-2">No Floor Plan Yet</h3>
-          <p className="text-sm text-muted-foreground/50 max-w-xs">
-            No floor plan has been implemented yet. Table assignment will be available once the floor plan is configured.
+          <h3 className="font-serif text-xl text-white/30 mb-2">Floor Plan</h3>
+          <p className="text-sm text-muted-foreground/50 max-w-xs mb-6">
+            Click "Choose Table" on a reservation to open the floor plan in selection mode.
           </p>
+          <Button variant="outline" size="sm" className="gap-2 opacity-60 hover:opacity-100" asChild>
+            <Link href={isOwner ? "/owner/floor-plan" : "/employee/floor-plan"}>
+              <Map className="w-3.5 h-3.5" /> Open Floor Plan
+            </Link>
+          </Button>
         </Card>
       </div>
 

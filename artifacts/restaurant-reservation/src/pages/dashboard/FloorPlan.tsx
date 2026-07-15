@@ -1,17 +1,27 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOwnerAuth } from "@/services/authStore";
 import { useEmployeeAuth } from "@/services/StoreContext";
 import { useFloorPlanStore } from "@/services/floorPlanStore";
 import { useReservationStore } from "@/services/reservationStore";
 import { useEmployeeStore } from "@/services/employeeStore";
-import { FloorTable, FloorTableStatus, TableShape } from "@/services/mockData";
+import { useWorkflowStore } from "@/services/workflowStore";
+import { FloorTable, FloorTableStatus, TableShape, Reservation } from "@/services/mockData";
+import {
+  assignTable as assignTableOp,
+  markGuestsSeated,
+  completeReservation,
+  moveReservation,
+  buildOps,
+} from "@/services/reservationOperations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Users, Clock, CheckCircle2, AlertCircle, Wrench, Star,
-  X, ChevronLeft, Plus, Trash2, Save, Pencil, LayoutGrid,
+  X, ChevronLeft, Plus, Trash2, Save, Pencil, LayoutGrid, MapPin,
+  ArrowRight, AlertTriangle, MoveRight,
 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -52,15 +62,30 @@ interface TableNodeProps {
   table: FloorTable;
   selected: boolean;
   editMode: boolean;
+  selectionMode: boolean;
   onPointerDown: (e: React.PointerEvent) => void;
   onClick: () => void;
 }
 
-function TableNode({ table, selected, editMode, onPointerDown, onClick }: TableNodeProps) {
+function TableNode({ table, selected, editMode, selectionMode, onPointerDown, onClick }: TableNodeProps) {
   const cfg = STATUS_CFG[table.status];
   const [w, h] = TABLE_DIMS[table.shape];
   const isRound = table.shape === "round";
   const isBanquet = table.shape === "banquet";
+  const isSelectable = selectionMode && table.status === "Available";
+  const isNotSelectable = selectionMode && table.status !== "Available";
+
+  // Selection mode styling
+  const selectionBorder = isSelectable
+    ? "#c9a84c"
+    : isNotSelectable
+      ? "#444"
+      : cfg.border;
+  const selectionBg = isSelectable
+    ? "rgba(201,168,76,0.18)"
+    : isNotSelectable
+      ? "rgba(20,20,20,0.8)"
+      : cfg.bg;
 
   return (
     <motion.div
@@ -71,17 +96,20 @@ function TableNode({ table, selected, editMode, onPointerDown, onClick }: TableN
         width: w,
         height: h,
         borderRadius: isRound ? "50%" : isBanquet ? "6px" : "10px",
-        border: `2px solid ${selected ? "#c9a84c" : cfg.border}`,
-        backgroundColor: cfg.bg,
+        border: `2px solid ${selected ? "#c9a84c" : selectionBorder}`,
+        backgroundColor: selectionBg,
         boxShadow: selected
           ? `0 0 0 3px rgba(201,168,76,0.35), 0 0 20px ${cfg.border}55`
-          : `0 2px 12px ${cfg.border}22`,
-        cursor: editMode ? "grab" : "pointer",
+          : isSelectable
+            ? `0 0 14px rgba(201,168,76,0.35), 0 0 28px rgba(201,168,76,0.15)`
+            : `0 2px 12px ${cfg.border}22`,
+        cursor: editMode ? "grab" : isNotSelectable ? "not-allowed" : "pointer",
+        opacity: isNotSelectable ? 0.3 : 1,
         zIndex: selected ? 30 : 10,
-        transition: "border-color 0.15s, box-shadow 0.15s",
+        transition: "border-color 0.15s, box-shadow 0.15s, opacity 0.2s",
       }}
-      whileHover={{ scale: 1.06, boxShadow: `0 0 18px ${cfg.border}55` }}
-      whileTap={{ scale: 0.97 }}
+      whileHover={!isNotSelectable ? { scale: 1.06, boxShadow: isSelectable ? `0 0 20px rgba(201,168,76,0.5)` : `0 0 18px ${cfg.border}55` } : {}}
+      whileTap={!isNotSelectable ? { scale: 0.97 } : {}}
       onPointerDown={editMode ? onPointerDown : undefined}
       onClick={onClick}
     >
@@ -89,9 +117,14 @@ function TableNode({ table, selected, editMode, onPointerDown, onClick }: TableN
         <span className="font-bold text-white leading-none" style={{ fontSize: isBanquet ? 13 : 11 }}>
           {table.number}
         </span>
-        <span style={{ color: cfg.text, fontSize: 9 }} className="leading-none opacity-80">
+        <span style={{ color: isSelectable ? "#c9a84c" : cfg.text, fontSize: 9 }} className="leading-none opacity-80">
           {table.capacity}p
         </span>
+        {isSelectable && (
+          <span style={{ fontSize: 7, color: "#c9a84c", opacity: 0.9 }} className="leading-none">
+            SELECT
+          </span>
+        )}
       </div>
       {editMode && (
         <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-primary/80 border border-primary/50 flex items-center justify-center pointer-events-none">
@@ -110,9 +143,14 @@ export default function FloorPlan() {
   const { floorTables, updateFloorTable, addFloorTable, removeFloorTable, saveFloorLayout } = useFloorPlanStore();
   const { reservations, updateStatus: updateReservationStatus } = useReservationStore();
   const { employees } = useEmployeeStore();
+  const { pendingTableAssignment, setPendingTableAssignment } = useWorkflowStore();
+  const [, navigate] = useLocation();
 
   const isWaiter = employee?.role === "Waiter";
   const canEdit = isOwner;
+
+  // Centralized ops object
+  const ops = buildOps(updateReservationStatus, updateFloorTable);
 
   // ── Floor & Selection state ──
   const [activeFloor, setActiveFloor] = useState<1 | 2>(1);
@@ -123,9 +161,17 @@ export default function FloorPlan() {
   const [editMode, setEditMode] = useState(false);
   const [draftTables, setDraftTables] = useState<FloorTable[]>([]);
 
+  // ── Selection mode state ──
+  const [confirmAssignState, setConfirmAssignState] = useState<{
+    table: FloorTable;
+    capacityWarning: boolean;
+    assignAnyway: boolean;
+  } | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
   // ── Form state ──
   const [assignSearch, setAssignSearch] = useState("");
-  const [specialForm, setSpecialForm] = useState({ name: "", reason: "", reservedBy: "" });
+  const [specialForm, setSpecialForm] = useState({ name: "", phone: "", reason: "", reservedBy: "" });
   const [oosReason, setOosReason] = useState("");
   const [notesInput, setNotesInput] = useState("");
   const [editNumInput, setEditNumInput] = useState("");
@@ -139,7 +185,9 @@ export default function FloorPlan() {
   } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // ── Displayed tables ──
+  // ── Derived ──
+  const selectionMode = !!pendingTableAssignment && !editMode;
+
   const activeTables = useMemo(
     () => (editMode ? draftTables : floorTables).filter(t => t.floor === activeFloor),
     [editMode, draftTables, floorTables, activeFloor]
@@ -163,7 +211,7 @@ export default function FloorPlan() {
     };
   }, [floorTables, activeFloor]);
 
-  // ── Assignable reservations ──
+  // ── Assignable reservations (for the "Assign Reservation" picker in normal mode) ──
   const usedReservationIds = new Set(floorTables.map(t => t.reservationId).filter(Boolean));
   const assignableReservations = reservations.filter(
     r => (r.status === "Pending" || r.status === "Confirmed") && !usedReservationIds.has(r.id)
@@ -193,6 +241,13 @@ export default function FloorPlan() {
     };
   }, []);
 
+  // ── Auto-clear success message ──
+  useEffect(() => {
+    if (!successMsg) return;
+    const t = setTimeout(() => setSuccessMsg(null), 3500);
+    return () => clearTimeout(t);
+  }, [successMsg]);
+
   // ── Enter/exit edit mode ──
   const enterEditMode = () => {
     setDraftTables([...floorTables]);
@@ -214,9 +269,29 @@ export default function FloorPlan() {
     setSelectedId(null);
   };
 
+  // ── Cancel selection mode ──
+  const cancelSelection = () => {
+    setPendingTableAssignment(null);
+    setConfirmAssignState(null);
+  };
+
   // ── Table click ──
   const handleTableClick = (table: FloorTable) => {
     if (dragRef.current?.moved) return;
+
+    // ── SELECTION MODE: only available tables are clickable ──
+    if (selectionMode) {
+      if (table.status !== "Available") return; // dimmed, not clickable
+      const reservation = pendingTableAssignment!.reservation;
+      setConfirmAssignState({
+        table,
+        capacityWarning: reservation.guests > table.capacity,
+        assignAnyway: false,
+      });
+      return;
+    }
+
+    // ── NORMAL MODE ──
     setSelectedId(table.id);
     setModalStep(editMode ? "editTable" : "main");
     setNotesInput(table.notes ?? "");
@@ -224,7 +299,7 @@ export default function FloorPlan() {
     setEditCapInput(String(table.capacity));
     setEditShapeInput(table.shape);
     setAssignSearch("");
-    setSpecialForm({ name: "", reason: "", reservedBy: "" });
+    setSpecialForm({ name: "", phone: "", reason: "", reservedBy: "" });
     setOosReason("");
   };
 
@@ -237,36 +312,77 @@ export default function FloorPlan() {
     }
   };
 
+  // ── Confirm table assignment (selection mode) ──
+  const handleConfirmAssign = () => {
+    if (!confirmAssignState || !pendingTableAssignment) return;
+    const { table } = confirmAssignState;
+    const { reservation, isMove, oldTableId, prevReservationStatus } = pendingTableAssignment;
+
+    if (isMove && oldTableId && prevReservationStatus) {
+      moveReservation(reservation.id, oldTableId, table.id, prevReservationStatus, ops);
+    } else {
+      assignTableOp(reservation.id, table.id, ops);
+    }
+
+    setConfirmAssignState(null);
+    setPendingTableAssignment(null);
+    setSelectedId(null);
+    setSuccessMsg(`Table ${table.number} assigned to ${reservation.customer.name}`);
+  };
+
   // ── Action handlers ──
   const handleAssignReservation = (reservationId: string) => {
     if (!selectedId) return;
-    const res = reservations.find(r => r.id === reservationId);
-    if (!res) return;
-    applyUpdate(selectedId, { status: "Waiting", reservationId, assignedAt: new Date().toISOString() });
+    assignTableOp(reservationId, selectedId, ops);
     setModalStep("main");
+    setSelectedId(null);
   };
 
   const handleMarkSeated = () => {
     if (!selectedId || !selectedTable) return;
-    applyUpdate(selectedId, { status: "Occupied", seatedAt: new Date().toISOString() });
-    if (selectedTable.reservationId) updateReservationStatus(selectedTable.reservationId, "Checked In");
+    if (selectedTable.reservationId) {
+      markGuestsSeated(selectedTable.reservationId, selectedId, ops);
+    } else {
+      applyUpdate(selectedId, { status: "Occupied", seatedAt: new Date().toISOString() });
+    }
     setSelectedId(null);
   };
 
   const handleMarkAvailable = () => {
-    if (!selectedId) return;
-    applyUpdate(selectedId, {
-      status: "Available", reservationId: undefined, assignedWaiter: undefined,
-      assignedAt: undefined, seatedAt: undefined, specialGuest: undefined, outOfService: undefined,
+    if (!selectedId || !selectedTable) return;
+    if (selectedTable.reservationId && selectedTable.status === "Occupied") {
+      completeReservation(selectedTable.reservationId, selectedId, ops);
+    } else {
+      applyUpdate(selectedId, {
+        status: "Available", reservationId: undefined, assignedWaiter: undefined,
+        assignedAt: undefined, seatedAt: undefined, specialGuest: undefined, outOfService: undefined,
+      });
+    }
+    setSelectedId(null);
+  };
+
+  const handleMoveTable = (table: FloorTable, res: Reservation) => {
+    const prevStatus = table.status === "Occupied" ? "Seated" : "Checked In";
+    setPendingTableAssignment({
+      reservation: res,
+      isMove: true,
+      oldTableId: table.id,
+      prevReservationStatus: prevStatus as "Checked In" | "Seated",
     });
     setSelectedId(null);
+    // Stay on floor plan — selection mode activates immediately
   };
 
   const handleSpecialGuest = () => {
     if (!selectedId) return;
     applyUpdate(selectedId, {
       status: "Special",
-      specialGuest: { ...specialForm, reservedAt: new Date().toISOString() },
+      specialGuest: {
+        name: specialForm.name,
+        reason: specialForm.reason,
+        reservedBy: specialForm.reservedBy || (employee?.name ?? "Staff"),
+        reservedAt: new Date().toISOString(),
+      },
     });
     setSelectedId(null);
   };
@@ -330,37 +446,93 @@ export default function FloorPlan() {
   return (
     <div className="flex flex-col h-full gap-4 min-h-0">
 
+      {/* ── Success Toast ── */}
+      <AnimatePresence>
+        {successMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[90] px-4 py-3 rounded-xl bg-emerald-900/90 border border-emerald-500/40 text-emerald-300 text-sm font-medium shadow-xl flex items-center gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            {successMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Table Selection Banner ── */}
+      <AnimatePresence>
+        {selectionMode && pendingTableAssignment && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="shrink-0 rounded-xl border border-primary/40 bg-primary/8 px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                <MapPin className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-primary/70 font-medium uppercase tracking-widest">
+                  {pendingTableAssignment.isMove ? "Moving Table" : "Choosing Table"}
+                </p>
+                <p className="text-sm text-white font-medium">
+                  {pendingTableAssignment.reservation.customer.name}
+                  <span className="text-muted-foreground font-normal">
+                    {" "}· {pendingTableAssignment.reservation.guests} guests
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 border border-emerald-500/25 rounded-lg ml-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs text-emerald-400">Select an available table</span>
+              </div>
+            </div>
+            <button
+              onClick={cancelSelection}
+              className="px-3 py-1.5 rounded-lg border border-white/15 text-muted-foreground hover:text-white hover:border-white/25 text-sm transition-colors"
+            >
+              Cancel Selection
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Header ── */}
-      <div className="flex flex-wrap items-start justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="font-serif text-2xl text-white flex items-center gap-2">
-            <LayoutGrid className="w-5 h-5 text-primary/70" />
-            Floor Plan
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {editMode ? "Edit mode — drag tables, add or remove, then save." : "Click any table to view details and manage status."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canEdit && !editMode && (
-            <Button variant="outline" size="sm" onClick={enterEditMode} className="gap-2">
-              <Pencil className="w-3.5 h-3.5" /> Edit Layout
-            </Button>
-          )}
-          {editMode && (
-            <>
-              <Button variant="ghost" size="sm" onClick={cancelEdit}>Cancel</Button>
-              <Button size="sm" variant="outline" className="gap-2 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
-                onClick={saveEdit}>
-                <Save className="w-3.5 h-3.5" /> Save Layout
+      {!selectionMode && (
+        <div className="flex flex-wrap items-start justify-between gap-3 shrink-0">
+          <div>
+            <h1 className="font-serif text-2xl text-white flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-primary/70" />
+              Floor Plan
+            </h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
+              {editMode ? "Edit mode — drag tables, add or remove, then save." : "Click any table to view details and manage status."}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {canEdit && !editMode && (
+              <Button variant="outline" size="sm" onClick={enterEditMode} className="gap-2">
+                <Pencil className="w-3.5 h-3.5" /> Edit Layout
               </Button>
-              <Button size="sm" className="gap-2" onClick={() => setModalStep("addTable")}>
-                <Plus className="w-3.5 h-3.5" /> Add Table
-              </Button>
-            </>
-          )}
+            )}
+            {editMode && (
+              <>
+                <Button variant="ghost" size="sm" onClick={cancelEdit}>Cancel</Button>
+                <Button size="sm" variant="outline" className="gap-2 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
+                  onClick={saveEdit}>
+                  <Save className="w-3.5 h-3.5" /> Save Layout
+                </Button>
+                <Button size="sm" className="gap-2" onClick={() => setModalStep("addTable")}>
+                  <Plus className="w-3.5 h-3.5" /> Add Table
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Floor Tabs + Stats ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
@@ -384,32 +556,44 @@ export default function FloorPlan() {
         </div>
 
         {/* Stats chips */}
-        <div className="flex gap-2 flex-wrap">
-          {[
-            { label: "Available", val: stats.available, color: "#10b981" },
-            { label: "Waiting",   val: stats.waiting,   color: "#f59e0b" },
-            { label: "Occupied",  val: stats.occupied,  color: "#3b82f6" },
-            { label: "Special",   val: stats.special,   color: "#a855f7" },
-            { label: "OOS",       val: stats.oos,       color: "#52525b" },
-          ].map(s => (
-            <div key={s.label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs"
-              style={{ borderColor: s.color + "44", background: s.color + "11" }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
-              <span style={{ color: s.color }}>{s.val} {s.label}</span>
-            </div>
-          ))}
-        </div>
+        {!selectionMode && (
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { label: "Available", val: stats.available, color: "#10b981" },
+              { label: "Waiting",   val: stats.waiting,   color: "#f59e0b" },
+              { label: "Occupied",  val: stats.occupied,  color: "#3b82f6" },
+              { label: "Special",   val: stats.special,   color: "#a855f7" },
+              { label: "OOS",       val: stats.oos,       color: "#52525b" },
+            ].map(s => (
+              <div key={s.label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs"
+                style={{ borderColor: s.color + "44", background: s.color + "11" }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
+                <span style={{ color: s.color }}>{s.val} {s.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* In selection mode: show available count */}
+        {selectionMode && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/8 text-xs text-primary">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            {stats.available} tables available on Floor {activeFloor}
+          </div>
+        )}
       </div>
 
       {/* ── Legend ── */}
-      <div className="flex flex-wrap gap-4 shrink-0 px-1">
-        {(Object.entries(STATUS_CFG) as [FloorTableStatus, typeof STATUS_CFG[FloorTableStatus]][]).map(([k, v]) => (
-          <div key={k} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="w-2.5 h-2.5 rounded-sm border" style={{ background: v.bg, borderColor: v.border }} />
-            {v.label}
-          </div>
-        ))}
-      </div>
+      {!selectionMode && (
+        <div className="flex flex-wrap gap-4 shrink-0 px-1">
+          {(Object.entries(STATUS_CFG) as [FloorTableStatus, typeof STATUS_CFG[FloorTableStatus]][]).map(([k, v]) => (
+            <div key={k} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="w-2.5 h-2.5 rounded-sm border" style={{ background: v.bg, borderColor: v.border }} />
+              {v.label}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Canvas ── */}
       <div className="flex-1 min-h-0 overflow-auto rounded-xl border border-white/5 bg-[#0c0c0c]">
@@ -456,6 +640,7 @@ export default function FloorPlan() {
                 table={table}
                 selected={selectedId === table.id}
                 editMode={editMode}
+                selectionMode={selectionMode}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   dragRef.current = {
@@ -472,9 +657,9 @@ export default function FloorPlan() {
         </div>
       </div>
 
-      {/* ── Table Modal ── */}
+      {/* ── Table Modal (normal mode) ── */}
       <AnimatePresence>
-        {selectedTable && (
+        {selectedTable && !selectionMode && (
           <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}
@@ -581,7 +766,7 @@ export default function FloorPlan() {
                       </div>
                     )}
 
-                    {/* WAITING */}
+                    {/* WAITING FOR GUESTS */}
                     {selectedTable.status === "Waiting" && (() => {
                       const res = getReservationForTable(selectedTable);
                       return (
@@ -590,23 +775,28 @@ export default function FloorPlan() {
                             {res ? (
                               <>
                                 <Row label="Customer" val={res.customer.name} />
-                                <Row label="Guests" val={String(res.guests)} />
-                                <Row label="Phone" val={res.customer.phone} />
+                                <Row label="Phone"    val={res.customer.phone} />
+                                <Row label="Guests"   val={String(res.guests)} />
+                                {res.specialRequests && (
+                                  <Row label="Notes" val={res.specialRequests} />
+                                )}
                                 <Row label="Assigned" val={fmtTime(selectedTable.assignedAt)} />
-                                <Row label="Waiting" val={elapsed(selectedTable.assignedAt)} />
+                                <Row label="Waiting"  val={elapsed(selectedTable.assignedAt)} />
                               </>
                             ) : (
                               <Row label="Assigned" val={fmtTime(selectedTable.assignedAt)} />
                             )}
                           </div>
-                          <Button className="w-full h-9 gap-2 bg-amber-500 hover:bg-amber-600 text-black text-sm"
+                          <Button className="w-full h-10 gap-2 bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold"
                             onClick={handleMarkSeated}>
                             <CheckCircle2 className="w-4 h-4" /> Mark Guests Seated
                           </Button>
-                          <Button className="w-full h-9 gap-2 text-sm" variant="outline"
-                            onClick={() => setModalStep("assign")}>
-                            <Users className="w-4 h-4" /> Change Table Assignment
-                          </Button>
+                          {res && (
+                            <Button className="w-full h-9 gap-2 text-sm" variant="outline"
+                              onClick={() => handleMoveTable(selectedTable, res)}>
+                              <MoveRight className="w-4 h-4" /> Move to Another Table
+                            </Button>
+                          )}
                           <Button className="w-full h-9 gap-2 text-sm text-destructive" variant="ghost"
                             onClick={handleMarkAvailable}>
                             <X className="w-4 h-4" /> Cancel Assignment
@@ -625,11 +815,12 @@ export default function FloorPlan() {
                             {res ? (
                               <>
                                 <Row label="Customer" val={res.customer.name} />
-                                <Row label="Guests" val={String(res.guests)} />
+                                <Row label="Guests"   val={String(res.guests)} />
+                                <Row label="Phone"    val={res.customer.phone} />
                               </>
                             ) : null}
                             <Row label="Seated at" val={fmtTime(selectedTable.seatedAt)} />
-                            <Row label="Duration" val={elapsed(selectedTable.seatedAt)} />
+                            <Row label="Duration"  val={elapsed(selectedTable.seatedAt)} />
                             {selectedTable.assignedWaiter && (
                               <Row label="Waiter" val={selectedTable.assignedWaiter} />
                             )}
@@ -647,10 +838,16 @@ export default function FloorPlan() {
                               </div>
                             </div>
                           )}
-                          <Button className="w-full h-9 gap-2 text-sm" variant="outline"
+                          <Button className="w-full h-10 gap-2 text-sm font-semibold" variant="outline"
                             onClick={handleMarkAvailable}>
                             <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Mark Table Available
                           </Button>
+                          {res && (
+                            <Button className="w-full h-9 gap-2 text-sm" variant="outline"
+                              onClick={() => handleMoveTable(selectedTable, res)}>
+                              <MoveRight className="w-4 h-4" /> Move to Another Table
+                            </Button>
+                          )}
                         </div>
                       );
                     })()}
@@ -659,10 +856,10 @@ export default function FloorPlan() {
                     {selectedTable.status === "Special" && selectedTable.specialGuest && (
                       <div className="space-y-3">
                         <div className="bg-purple-500/8 border border-purple-500/20 rounded-xl p-3 space-y-2">
-                          <Row label="Guest" val={selectedTable.specialGuest.name} />
-                          <Row label="Reason" val={selectedTable.specialGuest.reason} />
+                          <Row label="Guest"       val={selectedTable.specialGuest.name} />
+                          <Row label="Reason"      val={selectedTable.specialGuest.reason} />
                           <Row label="Reserved by" val={selectedTable.specialGuest.reservedBy} />
-                          <Row label="At" val={fmtTime(selectedTable.specialGuest.reservedAt)} />
+                          <Row label="At"          val={fmtTime(selectedTable.specialGuest.reservedAt)} />
                         </div>
                         <Button className="w-full h-9 gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm"
                           onClick={handleMarkSeated}>
@@ -683,16 +880,14 @@ export default function FloorPlan() {
                     {selectedTable.status === "OutOfService" && selectedTable.outOfService && (
                       <div className="space-y-3">
                         <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-xl p-3 space-y-2">
-                          <Row label="Reason" val={selectedTable.outOfService.reason} />
+                          <Row label="Reason"      val={selectedTable.outOfService.reason} />
                           <Row label="Disabled by" val={selectedTable.outOfService.disabledBy} />
-                          <Row label="Since" val={elapsed(selectedTable.outOfService.disabledAt)} />
+                          <Row label="Since"       val={elapsed(selectedTable.outOfService.disabledAt)} />
                         </div>
-                        {!isWaiter && (
-                          <Button className="w-full h-9 gap-2 text-sm" variant="outline"
-                            onClick={handleMarkAvailable}>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Return to Service
-                          </Button>
-                        )}
+                        <Button className="w-full h-9 gap-2 text-sm" variant="outline"
+                          onClick={handleMarkAvailable}>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Return to Service
+                        </Button>
                       </div>
                     )}
                   </>
@@ -704,6 +899,7 @@ export default function FloorPlan() {
                     <button onClick={() => setModalStep("main")} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-white transition-colors">
                       <ChevronLeft className="w-3 h-3" /> Back
                     </button>
+                    <p className="text-xs text-muted-foreground">Select a reservation to assign to this table</p>
                     <Input
                       placeholder="Search guest name..."
                       value={assignSearch}
@@ -737,22 +933,27 @@ export default function FloorPlan() {
                       <ChevronLeft className="w-3 h-3" /> Back
                     </button>
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Guest Name</Label>
+                      <Label className="text-xs text-muted-foreground">Guest Name *</Label>
                       <Input value={specialForm.name} onChange={e => setSpecialForm(p => ({ ...p, name: e.target.value }))}
                         placeholder="e.g. Nora Al-Farsi" className="h-8 text-sm" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">Reason / Occasion</Label>
+                      <Label className="text-xs text-muted-foreground">Phone (optional)</Label>
+                      <Input value={specialForm.phone} onChange={e => setSpecialForm(p => ({ ...p, phone: e.target.value }))}
+                        placeholder="+962 7X XXX XXXX" className="h-8 text-sm" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Reason / Notes *</Label>
                       <Input value={specialForm.reason} onChange={e => setSpecialForm(p => ({ ...p, reason: e.target.value }))}
-                        placeholder="e.g. VIP Birthday" className="h-8 text-sm" />
+                        placeholder="e.g. VIP Birthday, Corporate Event" className="h-8 text-sm" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Reserved By</Label>
                       <Input value={specialForm.reservedBy} onChange={e => setSpecialForm(p => ({ ...p, reservedBy: e.target.value }))}
-                        placeholder="Staff name" className="h-8 text-sm" />
+                        placeholder={employee?.name ?? "Staff name"} className="h-8 text-sm" />
                     </div>
                     <Button className="w-full h-9 gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm"
-                      disabled={!specialForm.name.trim()}
+                      disabled={!specialForm.name.trim() || !specialForm.reason.trim()}
                       onClick={handleSpecialGuest}>
                       <Star className="w-4 h-4" /> Confirm Special Guest
                     </Button>
@@ -767,8 +968,19 @@ export default function FloorPlan() {
                     </button>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Reason</Label>
+                      {/* Quick-select presets */}
+                      <div className="grid grid-cols-2 gap-1.5 mb-2">
+                        {["Broken Chair", "Maintenance", "Reserved Area", "Cleaning"].map(r => (
+                          <button key={r} onClick={() => setOosReason(r)}
+                            className={`py-1.5 px-2 rounded-lg border text-xs transition-all ${
+                              oosReason === r ? "border-zinc-500 bg-zinc-700/50 text-white" : "border-white/10 text-muted-foreground hover:border-white/20"
+                            }`}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
                       <Input value={oosReason} onChange={e => setOosReason(e.target.value)}
-                        placeholder="e.g. Chair broken, cleaning..." className="h-8 text-sm" />
+                        placeholder="Or type a custom reason..." className="h-8 text-sm" />
                     </div>
                     <Button className="w-full h-9 gap-2 text-sm border-zinc-600 text-zinc-300 hover:bg-zinc-700" variant="outline"
                       disabled={!oosReason.trim()} onClick={handleOutOfService}>
@@ -791,6 +1003,96 @@ export default function FloorPlan() {
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary resize-none"
                     />
                     <Button className="w-full h-9 text-sm" onClick={handleSaveNotes}>Save Notes</Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Confirm Table Assignment Modal (selection mode) ── */}
+      <AnimatePresence>
+        {confirmAssignState && pendingTableAssignment && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setConfirmAssignState(null); }}
+          >
+            <motion.div
+              className="w-full max-w-sm bg-[#141414] border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+              initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+            >
+              {/* Header */}
+              <div className="px-5 pt-5 pb-4 border-b border-white/6">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-serif text-lg text-white">
+                    {pendingTableAssignment.isMove ? "Move to Table" : "Assign"} Table {confirmAssignState.table.number}?
+                  </p>
+                  <button onClick={() => setConfirmAssignState(null)}
+                    className="text-muted-foreground hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Floor {confirmAssignState.table.floor} · {confirmAssignState.table.capacity} seats
+                </p>
+              </div>
+
+              <div className="px-5 py-4 space-y-4">
+                {/* Reservation info */}
+                <div className="bg-white/3 rounded-xl border border-white/8 divide-y divide-white/5">
+                  <div className="px-3 py-2.5 flex justify-between text-sm">
+                    <span className="text-muted-foreground">Customer</span>
+                    <span className="text-white font-medium">{pendingTableAssignment.reservation.customer.name}</span>
+                  </div>
+                  <div className="px-3 py-2.5 flex justify-between text-sm">
+                    <span className="text-muted-foreground">Guests</span>
+                    <span className="text-white">{pendingTableAssignment.reservation.guests}</span>
+                  </div>
+                  <div className="px-3 py-2.5 flex justify-between text-sm">
+                    <span className="text-muted-foreground">Table</span>
+                    <span className="text-white">Floor {confirmAssignState.table.floor} · Table {confirmAssignState.table.number}</span>
+                  </div>
+                  <div className="px-3 py-2.5 flex justify-between text-sm">
+                    <span className="text-muted-foreground">Capacity</span>
+                    <span className="text-white">{confirmAssignState.table.capacity} seats</span>
+                  </div>
+                </div>
+
+                {/* Capacity warning */}
+                {confirmAssignState.capacityWarning && !confirmAssignState.assignAnyway && (
+                  <div className="flex items-start gap-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-300">
+                      This table seats {confirmAssignState.table.capacity} guests, but this reservation is for{" "}
+                      <strong>{pendingTableAssignment.reservation.guests}</strong> guests.
+                    </p>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                {confirmAssignState.capacityWarning && !confirmAssignState.assignAnyway ? (
+                  <div className="space-y-2">
+                    <Button variant="outline" className="w-full h-9 text-sm" onClick={() => setConfirmAssignState(null)}>
+                      Choose Another Table
+                    </Button>
+                    <Button className="w-full h-9 text-sm bg-amber-600 hover:bg-amber-700 text-white"
+                      onClick={() => setConfirmAssignState(prev => prev ? { ...prev, assignAnyway: true } : null)}>
+                      Assign Anyway
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Button className="w-full h-10 gap-2 text-sm font-semibold" onClick={handleConfirmAssign}>
+                      <CheckCircle2 className="w-4 h-4" />
+                      {pendingTableAssignment.isMove ? "Confirm Move" : "Confirm Assignment"}
+                    </Button>
+                    <Button variant="ghost" className="w-full h-9 text-sm" onClick={() => setConfirmAssignState(null)}>
+                      Cancel
+                    </Button>
                   </div>
                 )}
               </div>

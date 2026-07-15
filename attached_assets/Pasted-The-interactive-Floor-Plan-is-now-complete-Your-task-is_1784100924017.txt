@@ -1,0 +1,456 @@
+The interactive Floor Plan is now complete.
+
+Your task is to build the complete WAITER RESERVATION ASSIGNMENT WORKFLOW and connect the existing reservation queue UI to the existing Floor Plan UI.
+
+IMPORTANT:
+
+- Do NOT redesign the Floor Plan.
+- Do NOT redesign the dashboards.
+- Do NOT change the existing visual design unless necessary for this workflow.
+- Do NOT implement a real backend yet.
+- Do NOT create fake API endpoints.
+- Use the existing frontend data/state layer for now.
+- Structure all actions cleanly so they can later be replaced with real backend API calls.
+- Keep the BoomClub dark theme and gold accent #E3BE59.
+- Do not leave TODOs or unfinished placeholder functionality.
+- Ensure the application builds successfully before finishing.
+
+==================================================
+1. WAITER INCOMING RESERVATIONS
+==================================================
+
+The waiter must be able to see a new reservation immediately when it is added to the frontend reservation state.
+
+Update the Waiter Dashboard so the main focus is an:
+
+"Incoming Reservations"
+
+section.
+
+Each incoming reservation card must display:
+
+- Customer Name
+- Phone Number
+- Guest Count
+- Special Notes, if present
+- Reservation Number, if available
+- Time Created
+- Live Waiting Time
+
+Every reservation that has not been assigned a table must have one LARGE and highly visible gold button:
+
+CHOOSE TABLE
+
+This must be the primary action.
+
+Do not use "Seat" as the primary button for an unassigned reservation.
+
+The waiter must choose a table before guests can be marked as seated.
+
+==================================================
+2. NEW RESERVATION ALERT
+==================================================
+
+When a new reservation is added while the waiter is using the application, show an in-app popup/toast immediately.
+
+Example:
+
+NEW RESERVATION
+
+John Smith
+4 Guests
+
+[ CHOOSE TABLE ]
+[ DISMISS ]
+
+The notification must appear regardless of which Waiter Dashboard page the waiter is currently viewing.
+
+For the frontend-only implementation, react to changes in the shared reservation state.
+
+Structure this notification system so that later it can easily receive real Socket.IO events from the backend.
+
+Do NOT implement the Socket.IO server now.
+
+==================================================
+3. CHOOSE TABLE BUTTON
+==================================================
+
+When the waiter clicks:
+
+CHOOSE TABLE
+
+on a reservation, save that reservation as the currently selected reservation and navigate the waiter to:
+
+Floor Plan
+
+The Floor Plan must enter a special:
+
+TABLE SELECTION MODE
+
+Show a clear banner at the top:
+
+Choosing a table for:
+John Smith · 4 Guests
+
+[ Cancel Selection ]
+
+The reservation information must remain available after navigating to the Floor Plan.
+
+==================================================
+4. TABLE SELECTION MODE
+==================================================
+
+While choosing a table:
+
+AVAILABLE TABLES:
+
+- Should be visually highlighted.
+- Should be clickable.
+- Should have a clear "Select Table" hover state.
+
+UNAVAILABLE TABLES:
+
+- Waiting For Guests
+- Occupied
+- Special Guest
+- Out Of Service
+
+These must be visually dimmed and must NOT be selectable.
+
+Do not allow the waiter to accidentally assign an unavailable table.
+
+The waiter must still be able to switch between Floor 1 and Floor 2 while selecting a table.
+
+The selected reservation must remain active while switching floors.
+
+==================================================
+5. TABLE CAPACITY WARNING
+==================================================
+
+Use table capacity when assigning reservations.
+
+If the reservation has more guests than the selected table capacity, show a warning:
+
+"This table seats 4 guests, but this reservation is for 6 guests."
+
+Buttons:
+
+Choose Another Table
+
+Assign Anyway
+
+Do not completely block the waiter because the restaurant may choose to accommodate the group differently.
+
+==================================================
+6. CONFIRM TABLE ASSIGNMENT
+==================================================
+
+When an available table is clicked during Table Selection Mode, show a confirmation modal.
+
+Example:
+
+ASSIGN TABLE 12?
+
+John Smith
+4 Guests
+Floor 1 · Table 12
+
+[ CONFIRM ASSIGNMENT ]
+[ CANCEL ]
+
+After confirmation:
+
+- Assign the reservation to the table.
+- Reservation status becomes "Waiting For Guests".
+- Table status becomes "Waiting For Guests".
+- Store the assigned table ID.
+- Store the assigned floor.
+- Store the assignment time.
+- Remove the reservation from Incoming Reservations.
+- Add it to the appropriate assigned/waiting section.
+- Exit Table Selection Mode.
+
+Then show:
+
+Table 12 Assigned Successfully
+
+==================================================
+7. WAITING FOR GUESTS WORKFLOW
+==================================================
+
+After a table is assigned, the waiter should NOT automatically mark the guests as seated.
+
+The table should show:
+
+WAITING FOR GUESTS
+
+When the waiter clicks the table normally, the existing table modal should display the assigned reservation information.
+
+Show:
+
+- Customer Name
+- Phone Number
+- Guest Count
+- Special Notes
+- Assigned Time
+
+Primary button:
+
+MARK GUESTS SEATED
+
+When clicked, show confirmation:
+
+"Confirm that John Smith and their party are seated at Table 12?"
+
+After confirmation:
+
+- Reservation status becomes "Seated".
+- Table status becomes "Occupied".
+- Store the seated time.
+
+==================================================
+8. OCCUPIED TABLE WORKFLOW
+==================================================
+
+When an occupied table is clicked, show:
+
+- Customer Name
+- Guest Count
+- Time Seated
+- How long the table has been occupied
+
+Primary action:
+
+MARK TABLE AVAILABLE
+
+Show confirmation before completing this action.
+
+After confirmation:
+
+- Reservation status becomes "Completed".
+- Table status becomes "Available".
+- Clear the current reservation from the table.
+- Keep the completed reservation in reservation history.
+
+The table should immediately become selectable for another reservation.
+
+==================================================
+9. CHANGE / MOVE TABLE
+==================================================
+
+For a table that is:
+
+- Waiting For Guests
+OR
+- Occupied
+
+include:
+
+CHANGE TABLE / MOVE TABLE
+
+When clicked:
+
+- Keep the current reservation selected.
+- Enter Table Selection Mode.
+- Highlight available tables.
+- Allow switching between floors.
+- Do not release the old table until the new table assignment is confirmed.
+
+After confirmation:
+
+- Release the old table.
+- Assign the new table.
+- Preserve the reservation status.
+
+If the guests were already seated, the new table becomes Occupied.
+
+If they were Waiting For Guests, the new table becomes Waiting For Guests.
+
+==================================================
+10. RESERVATION QUEUE SYNCHRONIZATION
+==================================================
+
+All reservation views must use the same shared reservation state.
+
+This includes:
+
+- Waiter Dashboard
+- Reservations Page
+- Doorman Dashboard
+- Floor Plan
+- Reservation notification system
+
+A reservation must never appear as "Incoming" after a table has been assigned.
+
+Use these frontend statuses consistently:
+
+Incoming
+Waiting For Guests
+Seated
+Completed
+Cancelled
+
+Do not create duplicate reservation state in separate pages.
+
+There must be one shared source of truth.
+
+==================================================
+11. FLOOR PLAN MANAGEMENT MUST STILL WORK
+==================================================
+
+Do not remove any existing Floor Plan functionality.
+
+Waiters must still be able to open Floor Plan normally without selecting a reservation.
+
+In normal Floor Plan mode, clicking tables must continue to support:
+
+- Viewing table details
+- Marking guests seated
+- Marking tables available
+- Moving guests
+- Reserving a table for a Special Guest
+- Removing a Special Guest reservation
+- Marking a table Out Of Service
+- Returning a table to Service
+- Editing notes
+
+The CHOOSE TABLE workflow is an additional mode.
+
+It must not replace normal Floor Plan management.
+
+==================================================
+12. SPECIAL GUEST TABLES
+==================================================
+
+Special Guest tables must never appear as available when choosing a table for a normal reservation.
+
+When reserving a table for a Special Guest, collect:
+
+- Guest Name
+- Phone Number (optional)
+- Reason / Notes
+
+The table should display clearly:
+
+SPECIAL GUEST
+
+and the guest name.
+
+The special reservation should remain active for the current business day until:
+
+- The guest is marked seated,
+- A waiter/owner removes the reservation,
+- Or it is later expired by backend business-day logic.
+
+For now, implement the complete frontend UI/state behavior only.
+
+==================================================
+13. OUT OF SERVICE TABLES
+==================================================
+
+When marking a table Out Of Service, require a reason.
+
+Examples:
+
+Broken Chair
+Maintenance
+Reserved Area
+Other
+
+Allow a custom reason.
+
+The table must become unselectable for reservations.
+
+The existing Return To Service action should restore it to Available.
+
+==================================================
+14. OWNER AND DOORMAN BEHAVIOR
+==================================================
+
+DOORMAN:
+
+- Creates reservations.
+- Sees the reservation queue.
+- Does NOT assign tables.
+- Does NOT mark guests seated.
+- Does NOT manage table statuses.
+
+Remove any "Seat" or table assignment actions from Doorman pages if they still exist.
+
+OWNER:
+
+- Can see all reservations.
+- Can use the complete Floor Plan.
+- Can perform all table management actions.
+- Can assign reservations if necessary.
+- Retains Floor Plan editing capabilities.
+
+WAITER:
+
+- Receives incoming reservations.
+- Chooses tables.
+- Seats guests.
+- Releases tables.
+- Manages Special Guest and Out Of Service statuses.
+- Cannot edit the physical Floor Plan layout.
+
+==================================================
+15. FRONTEND ARCHITECTURE FOR FUTURE BACKEND
+==================================================
+
+Keep the frontend ready for backend integration.
+
+Centralize reservation operations such as:
+
+- createReservation
+- assignTable
+- markGuestsSeated
+- completeReservation
+- cancelReservation
+- moveReservation
+- reserveSpecialGuest
+- releaseSpecialGuest
+- markTableOutOfService
+- returnTableToService
+
+Do not scatter this logic across page components.
+
+The next backend implementation should be able to replace these frontend operations with API calls without redesigning the UI.
+
+==================================================
+16. FINAL END-TO-END TEST
+==================================================
+
+Before finishing, manually verify this complete frontend flow:
+
+1. Log in as Doorman.
+2. Create a reservation.
+3. Confirm it appears in the reservation queue.
+4. Log in/view as Waiter.
+5. Confirm the reservation appears as Incoming.
+6. Click the large CHOOSE TABLE button.
+7. Confirm Floor Plan opens in selection mode.
+8. Switch between Floor 1 and Floor 2.
+9. Select an available table.
+10. Confirm the assignment.
+11. Confirm the table becomes Waiting For Guests.
+12. Click the table.
+13. Mark Guests Seated.
+14. Confirm the table becomes Occupied.
+15. Mark Table Available.
+16. Confirm the reservation becomes Completed.
+17. Confirm the table becomes Available again.
+18. Test Special Guest reservation.
+19. Confirm Special Guest tables cannot be assigned to normal reservations.
+20. Test Out Of Service.
+21. Confirm Out Of Service tables cannot be selected.
+22. Test moving a reservation to another table.
+23. Confirm all reservation views remain synchronized.
+
+Fix any issues found during this test.
+
+Do not stop after only creating the UI.
+
+The entire frontend workflow described above must function from beginning to end using the existing frontend state layer.
+
+Ensure the project builds successfully with zero errors before finishing.
