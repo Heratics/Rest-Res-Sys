@@ -10,11 +10,29 @@ export default function Home() {
   return (
     <div className="w-full relative flex flex-col items-center">
       {/* Hero Section */}
-      <section className="w-full h-screen flex items-center justify-center relative overflow-hidden -mt-20 pt-20">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-background z-0 flex items-center justify-center">
-          <div className="w-[150vw] h-[150vw] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background/0 to-background/0 absolute -top-1/2 opacity-70" />
+      <section className="w-full min-h-screen flex items-center justify-center relative overflow-hidden -mt-20 pt-20">
+
+        {/* Background: giant low-opacity owl */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+          <img
+            src="/boom-logo-clean.png"
+            alt=""
+            aria-hidden="true"
+            className="w-[80vw] max-w-[700px] object-contain opacity-[0.12]"
+            style={{ mixBlendMode: "screen" }}
+          />
         </div>
 
+        {/* Radial gradient overlay so edges fade into black */}
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, #0a0a0a 80%)",
+          }}
+        />
+
+        {/* Foreground content */}
         <div className="container relative z-10 mx-auto px-6 flex flex-col items-center text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -22,14 +40,15 @@ export default function Home() {
             transition={{ duration: 1, ease: "easeOut" }}
             className="flex flex-col items-center"
           >
-            {/* Logo */}
+            {/* Logo — foreground, larger */}
             <motion.img
-              src="/boom-logo.png"
-              alt="BooM Club Logo"
+              src="/boom-logo-clean.png"
+              alt="BooM Club"
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.9, ease: "easeOut" }}
-              className="w-48 h-48 md:w-60 md:h-60 object-contain mb-6 drop-shadow-[0_0_40px_rgba(201,168,76,0.25)]"
+              className="w-56 h-56 md:w-72 md:h-72 object-contain mb-4"
+              style={{ mixBlendMode: "screen" }}
             />
 
             <p className="text-primary font-medium tracking-[0.3em] text-xs md:text-sm uppercase mb-4">
@@ -58,8 +77,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Info Section */}
-      <section className="w-full py-24 bg-background relative z-10 border-t border-white/5">
+      {/* Info strip */}
+      <section className="w-full py-20 bg-background relative z-10 border-t border-white/5">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             {[
