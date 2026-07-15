@@ -20,6 +20,7 @@ export default function NewReservation() {
     name: "",
     phone: "",
     guests: "2",
+    specialRequests: "",
   });
 
   const set = (k: string, v: string) => {
@@ -44,6 +45,7 @@ export default function NewReservation() {
     const res = addReservation({
       customer: { id: `c_${Date.now()}`, name: form.name.trim(), phone: form.phone.trim() },
       guests: parseInt(form.guests),
+      specialRequests: form.specialRequests.trim() || undefined,
       status: "Pending",
     });
     setResult(res);
@@ -54,7 +56,7 @@ export default function NewReservation() {
   const reset = () => {
     setSubmitted(false);
     setResult(null);
-    setForm({ name: "", phone: "", guests: "2" });
+    setForm({ name: "", phone: "", guests: "2", specialRequests: "" });
     setErrors({});
   };
 
@@ -160,6 +162,18 @@ export default function NewReservation() {
                 onChange={(e) => set("guests", e.target.value)}
               />
               {errors.guests && <p className="text-xs text-destructive">{errors.guests}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="specialRequests">Special Requests</Label>
+              <textarea
+                id="specialRequests"
+                rows={3}
+                value={form.specialRequests}
+                onChange={(e) => set("specialRequests", e.target.value)}
+                placeholder="Dietary requirements, special occasions, seating preferences..."
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary resize-none"
+              />
             </div>
 
             <Button type="submit" size="lg" className="w-full mt-2" disabled={submitting}>

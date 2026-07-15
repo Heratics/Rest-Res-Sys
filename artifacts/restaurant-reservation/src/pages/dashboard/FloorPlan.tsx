@@ -18,6 +18,7 @@ import {
   releaseSpecialGuest,
   returnTableToService,
   markTableOutOfService,
+  unassignTable as unassignTableOp,
   buildOps,
 } from "@/services/reservationOperations";
 import { Button } from "@/components/ui/button";
@@ -393,8 +394,13 @@ export default function FloorPlan() {
   const handleMarkAvailable = () => {
     if (!selectedId || !selectedTable) return;
     if (selectedTable.reservationId && selectedTable.status === "Occupied") {
+      // Guests have finished — complete reservation and release table
       completeReservation(selectedTable.reservationId, selectedId, ops);
+    } else if (selectedTable.reservationId && selectedTable.status === "Waiting") {
+      // Assignment cancelled before guests arrived — return reservation to Incoming queue
+      unassignTableOp(selectedTable.reservationId, selectedId, ops);
     } else {
+      // Special / OOS / no reservation — just clear the table
       applyUpdate(selectedId, {
         status: "Available", reservationId: undefined, assignedWaiter: undefined,
         assignedAt: undefined, seatedAt: undefined, specialGuest: undefined, outOfService: undefined,
@@ -797,12 +803,10 @@ export default function FloorPlan() {
                           onClick={() => setModalStep("special")}>
                           <Star className="w-4 h-4 text-purple-400" /> Reserve for Special Guest
                         </Button>
-                        {!isWaiter && (
-                          <Button className="w-full h-9 justify-start gap-2 text-sm" variant="outline"
-                            onClick={() => setModalStep("oos")}>
-                            <Wrench className="w-4 h-4 text-zinc-400" /> Mark Out of Service
-                          </Button>
-                        )}
+                        <Button className="w-full h-9 justify-start gap-2 text-sm" variant="outline"
+                          onClick={() => setModalStep("oos")}>
+                          <Wrench className="w-4 h-4 text-zinc-400" /> Mark Out of Service
+                        </Button>
                         <Button className="w-full h-9 justify-start gap-2 text-sm" variant="ghost"
                           onClick={() => setModalStep("notes")}>
                           <Pencil className="w-4 h-4" /> {selectedTable.notes ? "Edit Notes" : "Add Notes"}

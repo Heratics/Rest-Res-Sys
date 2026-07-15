@@ -3,7 +3,8 @@
  * Displays full reservation info + role/status-aware actions.
  * Used on: ReservationsPage, DashboardOverview, WaiterDashboard, DoormanDashboard.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import React from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -195,7 +196,6 @@ export function ReservationDetailsModal({ reservation: initialRes, onClose }: Re
   );
 
   const [mode, setMode] = useState<"view" | "edit" | "confirmCancel">("view");
-  const [cancelConfirm, setCancelConfirm] = useState("");
 
   const canEdit = (isOwner || isDoorman) && isEditable(res);
   const canCancel = (isOwner || isDoorman) &&
@@ -226,6 +226,13 @@ export function ReservationDetailsModal({ reservation: initialRes, onClose }: Re
     navigate(`${base}/floor-plan`);
     onClose();
   };
+
+  // Escape key to close
+  React.useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   // ── Render ──
   return (

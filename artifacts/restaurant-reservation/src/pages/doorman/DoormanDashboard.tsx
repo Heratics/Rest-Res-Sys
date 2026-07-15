@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useReservationStore } from "@/services/reservationStore";
 import { useEmployeeAuth } from "@/services/authStore";
+import { cancelReservation, buildOps } from "@/services/reservationOperations";
+import { useFloorPlanStore } from "@/services/floorPlanStore";
 import { Reservation } from "@/services/mockData";
 import { isIncoming } from "@/services/reservationOperations";
 import {
@@ -118,7 +120,8 @@ function QueueCard({ res, onCancel, confirmId, setConfirmId }: {
 
 export default function DoormanDashboard() {
   const { employee } = useEmployeeAuth();
-  const { reservations, updateStatus } = useReservationStore();
+  const { reservations, updateStatus, updateReservation } = useReservationStore();
+  const { floorTables, updateFloorTable } = useFloorPlanStore();
   const [search, setSearch] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
@@ -206,7 +209,12 @@ export default function DoormanDashboard() {
               <QueueCard
                 key={res.id}
                 res={res}
-                onCancel={() => { updateStatus(res.id, "Cancelled"); setConfirmId(null); }}
+                onCancel={() => {
+                const ops = buildOps(updateStatus, updateFloorTable, updateReservation);
+                const assignedTable = floorTables.find(t => t.reservationId === res.id);
+                cancelReservation(res.id, employee?.name ?? "Doorman", ops, assignedTable?.id);
+                setConfirmId(null);
+              }}
                 confirmId={confirmId}
                 setConfirmId={setConfirmId}
               />

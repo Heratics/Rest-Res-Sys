@@ -1,1 +1,2 @@
 - [BOOMCLUB Architecture](boomclub-arch.md) — Frontend-only nightclub reservation system; dark luxury theme; two portals: Owner (/owner) and Staff (/employee).
+- [BOOMCLUB Frontend Complete](boomclub-frontend-complete.md) — All bugs fixed, API stubs created, two contract docs written; ready for backend handoff.

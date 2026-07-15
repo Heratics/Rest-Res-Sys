@@ -271,7 +271,7 @@ export default function DashboardOverview() {
         <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Create Reservation", path: "/owner/reservations", icon: CalendarPlus, color: "border-primary/30 hover:border-primary/60 hover:bg-primary/5" },
+            { label: "Create Reservation", path: "/owner/new-reservation", icon: CalendarPlus, color: "border-primary/30 hover:border-primary/60 hover:bg-primary/5" },
             { label: "View Reservations",  path: "/owner/reservations", icon: ClipboardList, color: "border-white/10 hover:border-white/20 hover:bg-white/3" },
             { label: "Open Floor Plan",    path: "/owner/floor-plan",   icon: LayoutGrid,   color: "border-white/10 hover:border-white/20 hover:bg-white/3" },
             { label: "Manage Employees",   path: "/owner/employees",    icon: UserCog,      color: "border-white/10 hover:border-white/20 hover:bg-white/3" },

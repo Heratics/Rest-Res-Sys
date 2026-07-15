@@ -252,6 +252,32 @@ export function buildOps(
   };
 }
 
+/**
+ * Unassign a table — releases the table and returns the reservation to the Incoming queue.
+ * Use when a Waiting assignment is cancelled before guests arrive (table goes back to
+ * Available, reservation goes back to Pending so it re-enters the incoming queue).
+ */
+export function unassignTable(
+  reservationId: string,
+  tableId: string,
+  ops: ReservationOps
+) {
+  ops.updateReservation(reservationId, {
+    status: "Pending",
+    assignedAt: undefined,
+    assignedTableId: undefined,
+    assignedTableNumber: undefined,
+    assignedFloor: undefined,
+  });
+  ops.updateFloorTable(tableId, {
+    status: "Available",
+    reservationId: undefined,
+    assignedWaiter: undefined,
+    assignedAt: undefined,
+    seatedAt: undefined,
+  });
+}
+
 /** True if a reservation has a table already assigned (Waiting or Seated). */
 export function isAssigned(r: Reservation): boolean {
   return r.status === "Checked In" || r.status === "Seated";

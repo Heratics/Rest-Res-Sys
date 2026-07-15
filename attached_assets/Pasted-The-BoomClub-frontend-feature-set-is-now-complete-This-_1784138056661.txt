@@ -1,0 +1,699 @@
+The BoomClub frontend feature set is now complete.
+
+This is the FINAL frontend pass before a completely new backend is built separately.
+
+Your task is NOT to add major new features or redesign the application.
+
+Your task is to:
+
+1. Perform a complete frontend audit.
+2. Fix all remaining bugs and inconsistencies.
+3. Polish responsiveness and UX.
+4. Remove obsolete frontend code.
+5. Prepare the frontend cleanly for backend integration.
+6. Generate a complete backend/API contract document that another AI developer can use to build the backend from scratch.
+
+IMPORTANT:
+
+- Do NOT build the backend.
+- Do NOT connect a database.
+- Do NOT implement Socket.IO server code.
+- Do NOT redesign working pages.
+- Do NOT replace the current frontend architecture unless something is genuinely broken.
+- Do NOT remove working functionality.
+- Do NOT leave TODOs.
+- Preserve the BoomClub dark theme and gold accent #E3BE59.
+- Keep the existing centralized workflow operations.
+- The application must compile with zero errors when finished.
+
+==================================================
+1. COMPLETE APPLICATION AUDIT
+==================================================
+
+Inspect the ENTIRE frontend codebase.
+
+Audit every:
+
+- Page
+- Route
+- Protected route
+- Sidebar item
+- Navigation button
+- Modal
+- Form
+- Search field
+- Filter
+- Reservation action
+- Table action
+- Employee action
+- Confirmation dialog
+
+Check for:
+
+- Buttons that do nothing
+- Broken navigation
+- Incorrect role permissions
+- Stale state
+- Duplicate state
+- Incorrect reservation statuses
+- Incorrect table statuses
+- Missing confirmation dialogs
+- Forms that do not reset
+- Modals that retain old data
+- Incorrect counts/statistics
+- Broken filters
+- Broken searches
+- Missing empty states
+- Console errors
+- TypeScript errors
+
+Fix every issue found.
+
+Do not simply report issues.
+
+Actually fix them.
+
+==================================================
+2. TEST ALL THREE ROLES
+==================================================
+
+Audit the complete application as:
+
+OWNER
+DOORMAN
+WAITER
+
+OWNER must be able to:
+
+- View operational dashboard
+- Create reservations
+- View/edit/cancel appropriate reservations
+- Assign tables
+- Use Floor Plan
+- Edit Floor Plan layout
+- Manage Special Guest tables
+- Manage Out Of Service tables
+- Manage employees
+- Access settings
+
+DOORMAN must be able to:
+
+- Create reservations
+- View reservations
+- Search reservations
+- Edit Incoming/Waiting reservation details
+- Cancel appropriate reservations
+- View history
+
+DOORMAN must NOT:
+
+- Access Floor Plan
+- Choose tables
+- Seat guests
+- Manage table statuses
+- Manage employees
+
+WAITER must be able to:
+
+- Immediately see Incoming reservations
+- Receive the frontend new-reservation notification
+- Click CHOOSE TABLE
+- Enter Floor Plan selection mode
+- Assign a table
+- Mark guests seated
+- Complete a table
+- Move reservations
+- Manage Special Guest tables
+- Manage Out Of Service tables
+
+WAITER must NOT:
+
+- Create normal reservations
+- Edit customer reservation information
+- Cancel normal reservations
+- Edit physical Floor Plan layout
+- Manage employees
+
+Fix any permission inconsistency.
+
+==================================================
+3. COMPLETE WORKFLOW TEST
+==================================================
+
+Test the complete normal workflow:
+
+Doorman creates reservation
+
+→ Reservation becomes Incoming
+
+→ Waiter immediately sees it
+
+→ Waiter receives notification
+
+→ Waiter clicks CHOOSE TABLE
+
+→ Floor Plan opens in selection mode
+
+→ Available tables are selectable
+
+→ Unavailable tables cannot be selected
+
+→ Waiter assigns table
+
+→ Reservation becomes Waiting For Guests
+
+→ Table becomes Waiting For Guests
+
+→ Waiter marks guests seated
+
+→ Reservation becomes Seated
+
+→ Table becomes Occupied
+
+→ Waiter marks table available
+
+→ Reservation becomes Completed
+
+→ Table becomes Available
+
+Verify every page updates from the same shared state.
+
+Fix any synchronization problems.
+
+==================================================
+4. TEST EDGE CASES
+==================================================
+
+Test and fix:
+
+- Reservation guest count exceeds table capacity
+- Reservation is cancelled before table assignment
+- Reservation is cancelled after table assignment
+- Assigned reservation is moved between floors
+- Occupied guests are moved to another table
+- Special Guest table cannot be selected for a normal reservation
+- Out Of Service table cannot be selected
+- Special Guest is seated and later completed
+- Inactive employee tries to log in
+- Deleted employee tries to log in
+- Table assignment selection is cancelled
+- Browser navigation occurs during table selection mode
+- Modal is closed halfway through editing
+- Search returns no results
+- Filters return no results
+
+The frontend should fail gracefully in every case.
+
+==================================================
+5. RESPONSIVE POLISH
+==================================================
+
+Audit all screens at approximately:
+
+1920px desktop
+1366px laptop
+1024px tablet
+768px tablet
+390px mobile
+
+The restaurant Floor Plan is primarily desktop/tablet software, but it must not completely break on mobile.
+
+Fix:
+
+- Overflow
+- Clipped modals
+- Horizontal scrolling where unnecessary
+- Sidebar behavior
+- Navigation
+- Card layouts
+- Reservation lists
+- Dashboard statistics
+- Employee tables
+- Forms
+- Buttons
+- Floor switcher
+- Floor Plan viewport
+
+For smaller screens:
+
+Allow the Floor Plan itself to use controlled horizontal/vertical scrolling if necessary rather than shrinking tables until they become unusable.
+
+All important actions must remain accessible.
+
+==================================================
+6. UX POLISH
+==================================================
+
+Make interaction behavior consistent throughout the application.
+
+Add or verify:
+
+- Loading-ready UI structure
+- Disabled button states
+- Form validation
+- Clear validation messages
+- Confirmation dialogs for destructive actions
+- Success feedback
+- Error feedback
+- Empty states
+- Search no-results states
+- Consistent modal closing behavior
+- Escape key modal closing where appropriate
+- Prevent accidental double submissions
+
+Do not over-animate the interface.
+
+Keep it professional and fast.
+
+==================================================
+7. STATE ARCHITECTURE AUDIT
+==================================================
+
+Audit StoreContext, workflowStore, and reservationOperations.
+
+There should be one clear source of truth for:
+
+- Reservations
+- Tables
+- Employees
+- Current authenticated user
+- Pending table assignment
+
+Avoid duplicated reservation or table state inside pages.
+
+Keep business operations centralized.
+
+Page components should primarily:
+
+- Display state
+- Collect user input
+- Trigger centralized operations
+
+Do not unnecessarily rewrite the current architecture if it already follows this structure.
+
+==================================================
+8. PREPARE FOR BACKEND INTEGRATION
+==================================================
+
+The next developer will DELETE the old backend and build a completely new backend specifically for this frontend.
+
+Prepare the frontend for this.
+
+Create a clean API service structure if one does not already exist.
+
+For example:
+
+src/services/api/
+
+Possible modules:
+
+auth
+reservations
+tables
+employees
+dashboard
+
+IMPORTANT:
+
+Do not connect these services yet if doing so would break the working frontend prototype.
+
+The current local frontend operations should continue functioning.
+
+The architecture should make it straightforward to later replace local operations with API calls.
+
+Do not create fake backend URLs or fake network requests.
+
+==================================================
+9. REAL-TIME INTEGRATION PREPARATION
+==================================================
+
+The current frontend notification behavior uses shared local state.
+
+Keep this working.
+
+However, structure the notification listener cleanly so it can later receive backend Socket.IO events.
+
+The future backend will need to broadcast events such as:
+
+reservation:created
+reservation:updated
+reservation:cancelled
+reservation:assigned
+reservation:seated
+reservation:completed
+table:updated
+employee:updated
+
+Do NOT implement the server.
+
+Do NOT require Socket.IO for the frontend to currently run.
+
+==================================================
+10. REMOVE OBSOLETE CODE
+==================================================
+
+Search the entire frontend for obsolete references to:
+
+- QR
+- QR scanner
+- QR ticket
+- WhatsApp
+- Payment
+- Payment Method
+- CliQ
+- Pay Upon Arrival
+- Customer-facing reservation pages that are no longer used
+
+Remove genuinely unused:
+
+- Components
+- Routes
+- Imports
+- Types
+- Interfaces
+- Utilities
+- Mock fields
+
+Be careful not to remove anything used by the current application.
+
+==================================================
+11. DATA MODEL FINALIZATION
+==================================================
+
+Audit and finalize the frontend data models.
+
+Document the exact fields currently required for:
+
+User
+
+Employee
+
+Reservation
+
+Table
+
+Floor / Floor Layout
+
+Special Guest Reservation
+
+Activity / History
+
+Notification
+
+Do not add speculative fields that the frontend does not need.
+
+Keep operational timestamps that are generated automatically even though users do not manually select reservation date or time.
+
+==================================================
+12. CREATE BACKEND CONTRACT DOCUMENT
+==================================================
+
+Create this file in the project root:
+
+BACKEND_API_CONTRACT.md
+
+This document is extremely important.
+
+Another AI developer will receive the finished frontend and this document and will build the entire Node.js/MySQL backend from scratch.
+
+The document must be based on the ACTUAL frontend implementation.
+
+Do not invent APIs for features that do not exist.
+
+Document:
+
+A. AUTHENTICATION
+
+For every required auth action:
+
+- HTTP method
+- Endpoint
+- Allowed role
+- Request body
+- Success response
+- Error responses
+
+Include:
+
+Login
+Current authenticated user
+Logout behavior if relevant
+
+Explain how JWT authentication should integrate with the frontend.
+
+--------------------------------------------------
+
+B. EMPLOYEES
+
+Document every operation the frontend requires.
+
+Examples:
+
+Get employees
+Create employee
+Update employee
+Activate employee
+Deactivate employee
+Delete employee
+Reset password
+
+For each:
+
+METHOD
+ENDPOINT
+AUTHORIZATION
+REQUEST
+RESPONSE
+
+--------------------------------------------------
+
+C. RESERVATIONS
+
+Document every required reservation operation.
+
+Include:
+
+Create reservation
+Get reservations
+Get reservation details
+Update reservation
+Cancel reservation
+Assign table
+Move table
+Mark guests seated
+Complete reservation
+
+Document exact status values expected by the frontend.
+
+Document exact request and response JSON shapes.
+
+--------------------------------------------------
+
+D. TABLES AND FLOOR PLAN
+
+Document:
+
+Get floors
+Get tables
+Create table
+Update table
+Delete table
+Save table position/layout
+Assign reservation
+Reserve for Special Guest
+Edit Special Guest reservation
+Seat Special Guest
+Remove Special Guest reservation
+Mark Out Of Service
+Return To Service
+
+Document exact table statuses expected by the frontend.
+
+--------------------------------------------------
+
+E. DASHBOARD
+
+Document any aggregated data genuinely needed from the backend.
+
+Do not create dashboard endpoints unnecessarily if the frontend can derive the values from already-loaded reservation/table data.
+
+Explain the preferred approach.
+
+--------------------------------------------------
+
+F. REAL-TIME EVENTS
+
+Document every Socket.IO event required.
+
+For every event include:
+
+EVENT NAME
+
+WHO RECEIVES IT
+
+WHEN IT FIRES
+
+PAYLOAD
+
+At minimum audit whether the frontend needs:
+
+reservation:created
+reservation:updated
+reservation:cancelled
+reservation:assigned
+reservation:seated
+reservation:completed
+table:updated
+employee:updated
+
+The backend contract must reflect the actual frontend behavior.
+
+--------------------------------------------------
+
+G. ROLE PERMISSIONS
+
+Create a permission matrix for:
+
+Owner
+Doorman
+Waiter
+
+Document which backend operations each role may perform.
+
+Frontend hiding is NOT security.
+
+Clearly state that the backend must enforce these permissions independently.
+
+--------------------------------------------------
+
+H. DATABASE REQUIREMENTS
+
+Based ONLY on the finished frontend, document the data the backend database needs to persist.
+
+Do not write the complete SQL schema yet.
+
+Document:
+
+Required entities
+Required relationships
+Required unique constraints
+Important indexes
+Data that should survive completion/cancellation
+Audit/history requirements
+
+Claude will design the final MySQL schema from this contract.
+
+--------------------------------------------------
+
+I. BUSINESS RULES
+
+Document all business rules the backend must enforce.
+
+Including:
+
+- Cannot assign unavailable table.
+- Special Guest table cannot receive normal reservation.
+- Out Of Service table cannot receive reservation.
+- Table capacity mismatch should warn but may be overridden.
+- Assigning a table changes reservation/table statuses together.
+- Moving a reservation must be atomic.
+- Cancelling an assigned reservation releases its table.
+- Completing a reservation releases its table.
+- Special Guest information remains while seated.
+- Inactive employees cannot authenticate.
+- Role permissions must be enforced server-side.
+
+Include every other business rule discovered from the actual frontend.
+
+==================================================
+13. CREATE FRONTEND INTEGRATION MAP
+==================================================
+
+Also create:
+
+FRONTEND_BACKEND_INTEGRATION_MAP.md
+
+This should be a concise implementation checklist for the backend developer.
+
+For each frontend feature list:
+
+FRONTEND FEATURE
+
+CURRENT LOCAL OPERATION
+
+FUTURE API / SOCKET REPLACEMENT
+
+FILES THAT USE IT
+
+Example structure:
+
+Create Reservation
+Current: createReservation() in reservationOperations
+Future: POST /api/reservations
+Used by: [actual filenames]
+
+Do this for every centralized operation.
+
+This will allow the backend developer to connect the backend without searching the entire codebase manually.
+
+==================================================
+14. DO NOT LEAVE SECRETS
+==================================================
+
+Audit the frontend for:
+
+- Passwords
+- API keys
+- Database credentials
+- Secrets
+- Hardcoded JWT tokens
+
+No real secrets should exist in frontend source code.
+
+Mock login credentials may remain ONLY if clearly isolated as development mock data and documented for removal during backend integration.
+
+==================================================
+15. FINAL BUILD CHECK
+==================================================
+
+Before finishing:
+
+Run the full TypeScript check.
+
+Run the production build.
+
+Fix all errors.
+
+Check browser console for runtime errors.
+
+Verify no broken imports.
+
+Verify no dead routes.
+
+Verify protected routes.
+
+Verify the main workflow still works after cleanup.
+
+Do not stop at reporting problems.
+
+Fix them.
+
+==================================================
+16. FINAL RESPONSE
+==================================================
+
+When finished, give me a concise summary containing:
+
+1. Bugs found and fixed.
+2. Responsive improvements made.
+3. Files removed.
+4. Architecture changes made.
+5. Confirmation that TypeScript passes.
+6. Confirmation that production build passes.
+7. Location of BACKEND_API_CONTRACT.md.
+8. Location of FRONTEND_BACKEND_INTEGRATION_MAP.md.
+9. Any remaining issue that genuinely requires a backend and therefore could not be implemented in the frontend.
+
+Do not claim something was tested if it was not actually tested.
+
+The goal is to finish with a stable, polished frontend and an exact technical specification for building a brand-new backend around it.

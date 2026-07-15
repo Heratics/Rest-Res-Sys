@@ -189,19 +189,13 @@ export default function ReservationsPage() {
           </p>
         </div>
         {/* Only Doorman and Owner can create reservations */}
-        {!isDoorman || isOwner ? (
-          <Link href="../new-reservation">
+        {(isOwner || isDoorman) && (
+          <Link href={isOwner ? "../new-reservation" : "/employee/new-reservation"}>
             <Button size="sm" className="gap-1.5 text-xs shrink-0">
               <CalendarPlus className="w-3.5 h-3.5" /> New
             </Button>
           </Link>
-        ) : isDoorman ? (
-          <Link href="/employee/new-reservation">
-            <Button size="sm" className="gap-1.5 text-xs shrink-0">
-              <CalendarPlus className="w-3.5 h-3.5" /> New
-            </Button>
-          </Link>
-        ) : null}
+        )}
       </div>
 
       {/* Search + Filters */}
